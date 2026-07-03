@@ -1,0 +1,1902 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AquaSystem — Industrial IoT Platform</title>
+  <link rel="icon" href="logo.png">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+
+<body>
+
+  <!-- ===================== LOGIN PAGE ===================== -->
+  <div id="login-page" class="login-page">
+    <div class="login-card">
+      <div class="login-brand">
+        <div class="icon">💧</div>
+        <h1>AquaSystem</h1>
+        <p>Industrial IoT Monitoring Platform</p>
+      </div>
+      <div id="login-error" class="login-error">Invalid username or password. Please try again.</div>
+      <div id="login-form-wrap">
+        <div class="form-group">
+          <label class="form-lbl">Username</label>
+          <input class="form-inp" type="text" id="login-user" placeholder="admin_user" value="admin" />
+        </div>
+        <div class="form-group">
+          <label class="form-lbl">Password</label>
+          <input class="form-inp" type="password" id="login-pass" placeholder="••••••••" value="admin" />
+        </div>
+        <div class="form-row">
+          <label><input type="checkbox" checked> Remember me</label>
+          <span class="link-text" style="font-size:.78rem">Forgot password?</span>
+        </div>
+        <button class="btn-block" onclick="doLogin()">Sign In</button>
+        <div class="login-switch">Don't have an account? <span class="link-text" onclick="showRegForm()">Register</span>
+        </div>
+      </div>
+      <div id="register-form-wrap" class="hidden">
+        <div class="form-group">
+          <label class="form-lbl">Username</label>
+          <input class="form-inp" type="text" placeholder="new_operator" />
+        </div>
+        <div class="form-group">
+          <label class="form-lbl">Email</label>
+          <input class="form-inp" type="email" placeholder="user@aquasys.io" />
+        </div>
+        <div class="form-group">
+          <label class="form-lbl">Password</label>
+          <input class="form-inp" type="password" placeholder="Min 8 characters" />
+        </div>
+        <div class="form-group">
+          <label class="form-lbl">Role</label>
+          <select class="form-select-inp">
+            <option value="ROLE_ADMIN">Admin — Full Control</option>
+            <option value="ROLE_VIEWER">Viewer — Read Only</option>
+          </select>
+        </div>
+        <button class="btn-block" onclick="doRegister()">Create Account</button>
+        <div class="login-switch">Already registered? <span class="link-text" onclick="showLoginForm()">Sign in</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== APP SHELL ===================== -->
+  <div id="app-shell" class="app-shell hidden">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <button class="ham-btn" onclick="toggleSidebar()">☰</button>
+      <div class="brand">
+        <div class="brand-dot"></div>AquaSystem
+      </div>
+      
+      <div class="topbar-right">
+
+        <div style="position:relative">
+          <button class="topbar-btn" onclick="toggleNotif()" title="Notifications">🔔<div class="notif-badge"
+              id="notif-count">2</div></button>
+          <div class="notif-panel" id="notif-panel">
+            <div class="notif-hdr"><span>Notifications</span><span class="link-text" style="font-size:.7rem"
+                onclick="markAllRead()">Mark all read</span></div>
+            <div class="notif-item" style="border-left:2px solid var(--warn)">
+              <div class="ni-title">⚠️ Turbidity Elevated — Fish Tank</div>
+              <div class="ni-time">2026-05-23 16:05:12</div>
+            </div>
+            <div class="notif-item" style="border-left:2px solid var(--cyan)">
+              <div class="ni-title">ℹ️ Supply Tank Level 45% — Monitor</div>
+              <div class="ni-time">2026-05-23 15:48:33</div>
+            </div>
+            <div class="notif-item" style="border-left:2px solid var(--green);opacity:.5">
+              <div class="ni-title">✅ pH Adjusted Successfully</div>
+              <div class="ni-time">2026-05-23 14:22:05</div>
+            </div>
+          </div>
+        </div>
+        <div class="user-chip" onclick="switchPanel('profile')">
+          <div class="user-avatar">AD</div>
+          <span>admin</span>
+          <span style="color:var(--text3)">▾</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- SIDEBAR -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-inner">
+        <div class="sidebar-section">Main</div>
+        <div class="nav-item active" onclick="switchPanel('overview')" id="sb-overview"><span
+            class="nav-icon">📊</span>Dashboard</div>
+
+        <div class="sidebar-section">Monitoring</div>
+        <div class="nav-item" onclick="switchPanel('fish-tank')" id="sb-fish-tank"><span class="nav-icon">🐟</span>Fish
+          Tank</div>
+        <div class="nav-item" onclick="switchPanel('filter-tank')" id="sb-filter-tank"><span
+            class="nav-icon">🔵</span>Filtration Tank</div>
+        <div class="nav-item" onclick="switchPanel('hydro')" id="sb-hydro"><span class="nav-icon">🌱</span>Hydroponic
+          Section</div>
+        <div class="nav-item" onclick="switchPanel('drain-tank')" id="sb-drain-tank"><span
+            class="nav-icon">⬇</span>Drain Tank</div>
+        <div class="nav-item" onclick="switchPanel('supply-tank')" id="sb-supply-tank"><span
+            class="nav-icon">🔺</span>Supply Tank</div>
+        
+        <div class="nav-item" onclick="switchPanel('flow')" id="sb-flow"><span class="nav-icon">〰</span>Flow Monitoring
+        </div>
+
+        <div class="sidebar-section">Control</div>
+        <div class="nav-item" onclick="switchPanel('sensors')" id="sb-sensors"><span class="nav-icon">🔬</span>Sensor
+          Management</div>
+        <div class="nav-item" onclick="switchPanel('actuators')" id="sb-actuators"><span
+            class="nav-icon">⚙</span>Actuator Control</div>
+        
+
+        <div class="sidebar-section">Camera</div>
+        <div class="nav-item" onclick="switchPanel('camera')" id="sb-camera"><span class="nav-icon">📷</span>ESP32
+          Camera</div>
+
+        <div class="sidebar-section">Analysis</div>
+        <div class="nav-item" onclick="switchPanel('alarms')" id="sb-alarms"><span class="nav-icon">🚨</span>Alarm
+          Center<span class="nav-badge">2</span></div>
+        <!--<div class="nav-item" onclick="switchPanel('analytics')" id="sb-analytics"><span
+            class="nav-icon">📈</span>Historical Analytics</div>-->
+        <div class="nav-item" onclick="switchPanel('reports')" id="sb-reports"><span class="nav-icon">📋</span>Reports
+          Center</div>
+        <div class="nav-item" onclick="switchPanel('history')" id="sb-history"><span class="nav-icon">🕐</span>Data
+          History</div>
+
+        <div class="sidebar-section">Administration</div>
+        <div class="nav-item" onclick="switchPanel('automation')" id="sb-automation"><span
+            class="nav-icon">🤖</span>Automation Settings</div>
+        <div class="nav-item" onclick="switchPanel('users')" id="sb-users"><span class="nav-icon">👥</span>User
+          Management</div>
+        
+
+        
+        <div class="nav-item" onclick="switchPanel('plants-fish')" id="sb-plants-fish"><span
+            class="nav-icon">🐠</span>Plants & Fish</div>
+
+        <div class="sidebar-divider"></div>
+        <div class="nav-item" onclick="switchPanel('about')" id="sb-about"><span class="nav-icon">ℹ️</span>About Us</div>
+        <div class="nav-item" onclick="switchPanel('profile')" id="sb-profile"><span class="nav-icon">👤</span>Profile
+        </div>
+        <div class="nav-item" onclick="doLogout()"><span class="nav-icon">🚪</span>Sign Out</div>
+      </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+
+      <!-- ===== DASHBOARD / OVERVIEW ===== -->
+      <div class="panel active" id="panel-overview">
+        <div class="breadcrumb"><span>Dashboard</span></div>
+        <div class="panel-hdr">
+          <div>
+            <div class="panel-title">System Overview</div>
+            <div class="panel-sub">Real-time monitoring · MQTT connected · &lt;1s latency</div>
+          </div>
+          <div class="flex gap1">
+            <div class="monospace" style="font-size:.7rem;color:var(--text3)" id="clock"></div>
+            <button class="btn btn-outline btn-icon" onclick="refreshData()" title="Refresh">🔄</button>
+          </div>
+        </div>
+        <!-- Status Row -->
+        <div class="gauto mb15">
+          <div class="stat-card">
+            <div class="stat-icon si-cyan">📊</div>
+            <div class="stat-info">
+              <div class="lbl">pH Level</div>
+              <div class="val val-cyan" id="ov-ph">7.2</div>
+              <div class="sub">Range: 6.8–7.4</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon si-cyan">💧</div>
+            <div class="stat-info">
+              <div class="lbl">TDS</div>
+              <div class="val val-cyan" id="ov-tds">485</div>
+              <div class="sub">ppm · Range: 400–700</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon si-warn">🌡</div>
+            <div class="stat-info">
+              <div class="lbl">Water Temp</div>
+              <div class="val" id="ov-temp">24.3</div>
+              <div class="sub">°C · Range: 22–28</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon si-green">💦</div>
+            <div class="stat-info">
+              <div class="lbl">Humidity</div>
+              <div class="val val-ok" id="ov-hum">55</div>
+              <div class="sub">%RH · Range: 50–80</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon si-warn">🌊</div>
+            <div class="stat-info">
+              <div class="lbl">Turbidity</div>
+              <div class="val val-warn" id="ov-turb">42</div>
+              <div class="sub">NTU · Max: 30 ⚠</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon si-green">⚡</div>
+            <div class="stat-info">
+              <div class="lbl">Active Actuators</div>
+              <div class="val val-ok" id="ov-active-actuators">—</div>
+              <div class="sub">Running now</div>
+            </div>
+          </div>
+        </div>
+        <!-- ESP32 Device & Camera Status Cards -->
+        <div class="g2 mb15" id="esp-status-section">
+          <div class="stat-card" id="card-esp-device">
+            <div class="stat-icon si-cyan" id="esp-device-icon">📡</div>
+            <div class="stat-info">
+              <div class="lbl">ESP32 Device Status</div>
+              <div class="val" id="esp-device-val" style="color:var(--text3)">—</div>
+              <div class="sub" id="esp-device-sub">Checking…</div>
+            </div>
+          </div>
+          <div class="stat-card" id="card-esp-camera">
+            <div class="stat-icon si-cyan" id="esp-camera-icon">📷</div>
+            <div class="stat-info">
+              <div class="lbl">ESP32 Camera Status</div>
+              <div class="val" id="esp-camera-val" style="color:var(--text3)">—</div>
+              <div class="sub" id="esp-camera-sub">Checking…</div>
+            </div>
+          </div>
+        </div>
+        <!-- Charts Row -->
+        <div class="g2 mb15">
+          <div class="chart-card">
+            <div class="chart-title">pH Trend (last 24h)<span class="badge badge-ok">Live</span></div>
+            <div class="chart-wrap ch-200"><canvas id="chart-ov-ph"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Temperature Trend<span class="badge badge-ok">Live</span></div>
+            <div class="chart-wrap ch-200"><canvas id="chart-ov-temp"></canvas></div>
+          </div>
+        </div>
+        <!-- Tank water levels row -->
+        <div class="card mb15">
+          <div class="panel-title" style="font-size:1rem;margin-bottom:1rem">Tank Water Levels</div>
+          <div class="tank-grid" id="ov-tanks"></div>
+        </div>
+        <!-- Actuator status quick view -->
+        <div class="card">
+          <div class="panel-title" style="font-size:1rem;margin-bottom:1rem">Actuator Status Overview</div>
+          <div class="gauto-sm" id="ov-actuators"></div>
+        </div>
+      
+      </div>
+
+      <!-- ===== FISH TANK ===== -->
+      <div class="panel" id="panel-fish-tank">
+        <div class="breadcrumb"><span>Monitoring</span> › Fish Tank</div>
+        <div class="panel-hdr">
+          <div>
+            <div class="panel-title">Fish Tank</div>
+            <div class="panel-sub">Primary aquaculture unit — 7 sensors · 4 actuators</div>
+          </div>
+        </div>
+        <div class="gauto mb15">
+          <div class="sensor-card sc-cyan">
+            <div class="sc-tank">Fish Tank</div>
+            <div class="sc-name">Water Level 1</div>
+            <div class="sc-val-row">
+              <div class="sc-val val-cyan" id="ft-wl1">80</div>
+              <div class="sc-unit">%</div>
+            </div>
+            <div class="sc-status ss-ok">● Normal</div>
+            <div class="sc-bar">
+              <div class="sc-fill" style="width:80%"></div>
+            </div>
+            <div class="sc-updated" id="ft-wl1-t">Updated 2s ago</div>
+          </div>
+          <div class="sensor-card sc-ok">
+            <div class="sc-tank">Fish Tank</div>
+            <div class="sc-name">Water Temperature</div>
+            <div class="sc-val-row">
+              <div class="sc-val val-ok" id="ft-temp">24.3</div>
+              <div class="sc-unit">°C</div>
+            </div>
+            <div class="sc-status ss-ok">● Normal</div>
+            <div class="sc-bar">
+              <div class="sc-fill" style="width:61%"></div>
+            </div>
+            <div class="sc-updated">Updated 2s ago</div>
+          </div>
+          <div class="sensor-card sc-cyan">
+            <div class="sc-tank">Fish Tank</div>
+            <div class="sc-name">TDS</div>
+            <div class="sc-val-row">
+              <div class="sc-val val-cyan" id="ft-tds">485</div>
+              <div class="sc-unit">ppm</div>
+            </div>
+            <div class="sc-status ss-ok">● Normal</div>
+            <div class="sc-bar">
+              <div class="sc-fill" style="width:55%"></div>
+            </div>
+            <div class="sc-updated">Updated 2s ago</div>
+          </div>
+          <div class="sensor-card sc-cyan">
+            <div class="sc-tank">Fish Tank</div>
+            <div class="sc-name">pH</div>
+            <div class="sc-val-row">
+              <div class="sc-val val-cyan" id="ft-ph">7.2</div>
+              <div class="sc-unit"></div>
+            </div>
+            <div class="sc-status ss-ok">● Normal (6.8–7.4)</div>
+            <div class="sc-bar">
+              <div class="sc-fill" style="width:72%"></div>
+            </div>
+            <div class="sc-updated">Updated 2s ago</div>
+          </div>
+          <div class="sensor-card sc-warn">
+            <div class="sc-tank">Fish Tank</div>
+            <div class="sc-name">Turbidity</div>
+            <div class="sc-val-row">
+              <div class="sc-val val-warn" id="ft-turb">42</div>
+              <div class="sc-unit">NTU</div>
+            </div>
+            <div class="sc-status ss-warn">▲ Elevated</div>
+            <div class="sc-bar">
+              <div class="sc-fill" style="width:62%;background:var(--warn)"></div>
+            </div>
+            <div class="sc-updated">Updated 2s ago</div>
+          </div>
+          <div class="sensor-card sc-cyan">
+            <div class="sc-tank">Fish Tank</div>
+            <div class="sc-name">Float Switch</div>
+            <div class="sc-val-row">
+              <div class="sc-val text-green" style="font-size:1rem" id="ft-float-val">HIGH</div>
+            </div>
+            <div class="sc-status ss-ok">● Activated</div>
+            <div class="sc-updated">Updated 2s ago</div>
+          </div>
+          <div class="sensor-card sc-ok">
+            <div class="sc-tank">Environment</div>
+            <div class="sc-name">SHT31 Air Temp</div>
+            <div class="sc-val-row">
+              <div class="sc-val val-ok" id="ft-airtemp">28.1</div>
+              <div class="sc-unit">°C</div>
+            </div>
+            <div class="sc-status ss-ok">● Normal</div>
+            <div class="sc-updated">Updated 2s ago</div>
+          </div>
+          <div class="sensor-card sc-ok">
+            <div class="sc-tank">Environment</div>
+            <div class="sc-name">Humidity (SHT31)</div>
+            <div class="sc-val-row">
+              <div class="sc-val val-ok" id="ft-hum">55</div>
+              <div class="sc-unit">%RH</div>
+            </div>
+            <div class="sc-status ss-ok">● Normal</div>
+            <div class="sc-updated">Updated 2s ago</div>
+          </div>
+        </div>
+        <div class="g2 mb15">
+          <div class="chart-card">
+            <div class="chart-title">pH — 24h History</div>
+            <div class="chart-wrap ch-160"><canvas id="chart-ft-ph"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Temperature — 24h History</div>
+            <div class="chart-wrap ch-160"><canvas id="chart-ft-temp"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">TDS — 24h History</div>
+            <div class="chart-wrap ch-160"><canvas id="chart-ft-tds"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Turbidity — 24h History</div>
+            <div class="chart-wrap ch-160"><canvas id="chart-ft-turb"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="panel-title" style="font-size:1rem;margin-bottom:.75rem">Fish Tank Actuators</div>
+          <div class="gauto-sm" id="ft-actuators"></div>
+        </div>
+      </div>
+
+      <!-- ===== FILTRATION TANK ===== -->
+      <div class="panel" id="panel-filter-tank">
+        <div class="breadcrumb"><span>Monitoring</span> › Filtration Tank</div>
+        <div class="panel-hdr">
+          <div>
+            <div class="panel-title">Filtration Tank</div>
+            <div class="panel-sub">Mechanical + Biological filtration — 2 sensors · 6 actuators</div>
+          </div>
+        </div>
+        <div class="gauto mb15">
+          <div class="sensor-card sc-cyan">
+            <div class="sc-tank">Filter Tank</div>
+            <div class="sc-name">Water Level 2</div>
+            <div class="sc-val-row">
+              <div class="sc-val val-cyan" id="filt-wl2">75</div>
+              <div class="sc-unit">%</div>
+            </div>
+            <div class="sc-status ss-ok">● Normal</div>
+            <div class="sc-bar">
+              <div class="sc-fill" style="width:75%"></div>
+            </div>
+          </div>
+          <div class="sensor-card sc-ok">
+            <div class="sc-tank">Filter Tank</div>
+            <div class="sc-name">Water Temperature</div>
+            <div class="sc-val-row">
+              <div class="sc-val val-ok">23.8</div>
+              <div class="sc-unit">°C</div>
+            </div>
+            <div class="sc-status ss-ok">● Normal</div>
+            <div class="sc-bar">
+              <div class="sc-fill" style="width:58%"></div>
+            </div>
+          </div>
+          <div class="sensor-card sc-ok">
+            <div class="sc-tank">Flow Sensor 1</div>
+            <div class="sc-name">Filter→Hydro Flow</div>
+            <div class="sc-val-row">
+              <div class="sc-val val-ok" id="filt-fm1">—</div>
+              <div class="sc-unit">L/min</div>
+            </div>
+            <div class="sc-status ss-ok">● Flowing</div>
+          </div>
+          <div class="sensor-card sc-ok">
+            <div class="sc-tank">Flow Sensor 2</div>
+            <div class="sc-name">Fish→Filter Flow</div>
+            <div class="sc-val-row">
+              <div class="sc-val val-ok" id="filt-fm2">—</div>
+              <div class="sc-unit">L/min</div>
+            </div>
+            <div class="sc-status ss-ok">● Flowing</div>
+          </div>
+          <div class="sensor-card sc-cyan">
+            <div class="sc-tank">Filter Tank</div>
+            <div class="sc-name">Float Switch</div>
+            <div class="sc-val-row">
+              <div class="sc-val text-green" style="font-size:1rem" id="filt-float-val">—</div>
+            </div>
+            <div class="sc-status ss-ok" id="filt-float-status">● —</div>
+            <div class="sc-updated">Updated live</div>
+          </div>
+        </div>
+        <div class="card mb15">
+          <div class="panel-title" style="font-size:1rem;margin-bottom:.75rem">Filtration Tank Actuators</div>
+          <div class="gauto-sm" id="filt-actuators"></div>
+        </div>
+        <div class="g2">
+          
+        </div>
+      </div>
+
+      <!-- ===== HYDROPONIC SECTION ===== -->
+      <div class="panel" id="panel-hydro">
+        <div class="breadcrumb"><span>Monitoring</span> › Hydroponic Section</div>
+        <div class="panel-hdr">
+          <div>
+            <div class="panel-title">Hydroponic Section</div>
+            <div class="panel-sub">RDWC grow beds — nutrient absorption & water purification</div>
+          </div>
+        </div>
+        <div class="gauto mb15">
+          <div class="sensor-card sc-ok">
+            <div class="sc-tank">Grow Bed</div>
+            <div class="sc-name">Inlet Flow</div>
+            <div class="sc-val-row">
+              <div class="sc-val val-ok" id="hydro-fm1">—</div>
+              <div class="sc-unit">L/min</div>
+            </div>
+            <div class="sc-status ss-ok">● Active</div>
+          </div>
+          <div class="sensor-card sc-ok">
+            <div class="sc-tank">Grow Bed</div>
+            <div class="sc-name">Nutrient TDS</div>
+            <div class="sc-val-row">
+              <div class="sc-val val-ok" id="hydro-tds">—</div>
+              <div class="sc-unit">ppm</div>
+            </div>
+            <div class="sc-status ss-ok">● Optimal</div>
+          </div>
+          <div class="sensor-card sc-ok">
+            <div class="sc-tank">Grow Bed</div>
+            <div class="sc-name">pH Level</div>
+            <div class="sc-val-row">
+              <div class="sc-val val-cyan" id="hydro-ph">—</div>
+              <div class="sc-unit"></div>
+            </div>
+            <div class="sc-status ss-ok">● Normal</div>
+          </div>
+          <div class="sensor-card sc-ok">
+            <div class="sc-tank">Environment</div>
+            <div class="sc-name">Canopy Temp</div>
+            <div class="sc-val-row">
+              <div class="sc-val val-ok">28.1</div>
+              <div class="sc-unit">°C</div>
+            </div>
+            <div class="sc-status ss-ok">● Normal</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="panel-title" style="font-size:1rem;margin-bottom:.75rem">Species Reference</div>
+          <div class="g2">
+            <div class="card-sm">
+              <div style="font-weight:600;margin-bottom:.5rem">🌿 Lettuce (Lactuca sativa)</div>
+              <div class="flex" style="justify-content:space-between;font-size:.8rem;margin-bottom:.3rem"><span
+                  class="text-muted">pH Range</span><span class="text-green">6.0 – 7.0</span></div>
+              <div class="flex" style="justify-content:space-between;font-size:.8rem;margin-bottom:.3rem"><span
+                  class="text-muted">Temp Range</span><span class="text-green">18 – 24°C</span></div>
+              <div class="flex" style="justify-content:space-between;font-size:.8rem"><span class="text-muted">TDS
+                  Range</span><span class="text-green">560 – 840 ppm</span></div>
+            </div>
+            <div class="card-sm">
+              <div style="font-weight:600;margin-bottom:.5rem">⚡ Dosing Status</div>
+              <div class="flex" style="justify-content:space-between;font-size:.8rem;margin-bottom:.3rem"><span
+                  class="text-muted">Pump 1 (Acid)</span><span style="color:var(--text3)">Idle</span></div>
+              <div class="flex" style="justify-content:space-between;font-size:.8rem;margin-bottom:.3rem"><span
+                  class="text-muted">Pump 2 (Base)</span><span style="color:var(--text3)">Idle</span></div>
+              <div class="flex" style="justify-content:space-between;font-size:.8rem"><span class="text-muted">Pump 3
+                  (Nutrient)</span><span class="text-cyan">Running</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== DRAIN TANK ===== -->
+      <div class="panel" id="panel-drain-tank">
+        <div class="breadcrumb"><span>Monitoring</span> › Drain Tank</div>
+        <div class="panel-hdr">
+          <div>
+            <div class="panel-title">Drain Tank</div>
+            <div class="panel-sub">Overflow & drain buffer — 1 sensor</div>
+          </div>
+        </div>
+        <div class="gauto mb15">
+          <div class="sensor-card sc-ok">
+            <div class="sc-tank">Drain Tank</div>
+            <div class="sc-name">Water Level 3</div>
+            <div class="sc-val-row">
+              <div class="sc-val val-ok" id="drain-wl3">40</div>
+              <div class="sc-unit">%</div>
+            </div>
+            <div class="sc-status ss-ok">● Normal</div>
+            <div class="sc-bar">
+              <div class="sc-fill" style="width:40%"></div>
+            </div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Water Level 3 — 24h Trend</div>
+          <div class="chart-wrap ch-240"><canvas id="chart-drain-wl3"></canvas></div>
+        </div>
+      </div>
+
+      <!-- ===== SUPPLY TANK ===== -->
+      <div class="panel" id="panel-supply-tank">
+        <div class="breadcrumb"><span>Monitoring</span> › Supply Tank</div>
+        <div class="panel-hdr">
+          <div>
+            <div class="panel-title">Supply Tank</div>
+            <div class="panel-sub">Fresh water reservoir — 1 sensor · 1 actuator</div>
+          </div>
+        </div>
+        <div class="gauto mb15">
+          <div class="sensor-card sc-warn">
+            <div class="sc-tank">Supply Tank</div>
+            <div class="sc-name">Water Level 4</div>
+            <div class="sc-val-row">
+              <div class="sc-val val-warn" id="sup-wl4">45</div>
+              <div class="sc-unit">%</div>
+            </div>
+            <div class="sc-status ss-warn">▲ Low — Monitor</div>
+            <div class="sc-bar">
+              <div class="sc-fill" style="width:45%;background:var(--warn)"></div>
+            </div>
+          </div>
+        </div>
+        <div class="g2">
+          <div class="chart-card">
+            <div class="chart-title">Water Level 4 — 24h</div>
+            <div class="chart-wrap ch-200"><canvas id="chart-sup-wl4"></canvas></div>
+          </div>
+          
+        </div>
+      </div>
+
+    
+
+      <!-- ===== FLOW MONITORING ===== -->
+      <div class="panel" id="panel-flow">
+        <div class="breadcrumb"><span>Monitoring</span> › Flow</div>
+        <div class="panel-hdr">
+          <div>
+            <div class="panel-title">Flow Monitoring</div>
+            <div class="panel-sub">Flow Sensor 1: Filter→Hydro · Flow Sensor 2: Fish→Filter</div>
+          </div>
+        </div>
+        <div class="g2 mb15">
+          <div class="sensor-card sc-ok">
+            <div class="sc-name">Flow Sensor 1 — Filter→Hydro</div>
+            <div class="sc-val-row">
+              <div class="sc-val val-ok" id="flow-fm1">—</div>
+              <div class="sc-unit">L/min</div>
+            </div>
+            <div class="sc-status ss-ok">● Flowing Normally</div>
+            <div class="sc-bar">
+              <div class="sc-fill" id="flow-fm1-bar" style="width:0%"></div>
+            </div>
+            <div class="sc-updated" id="flow-fm1-daily">Daily: —</div>
+          </div>
+          <div class="sensor-card sc-ok">
+            <div class="sc-name">Flow Sensor 2 — Fish→Filter</div>
+            <div class="sc-val-row">
+              <div class="sc-val val-ok" id="flow-fm2">—</div>
+              <div class="sc-unit">L/min</div>
+            </div>
+            <div class="sc-status ss-ok">● Flowing Normally</div>
+            <div class="sc-bar">
+              <div class="sc-fill" id="flow-fm2-bar" style="width:0%"></div>
+            </div>
+            <div class="sc-updated" id="flow-fm2-daily">Daily: —</div>
+          </div>
+        </div>
+        <div class="card mb15">
+          <div class="panel-title" style="font-size:1rem;margin-bottom:.75rem">Live Water Flow</div>
+          <div style="display:flex;flex-direction:column;gap:.75rem">
+            <div>
+              <div style="font-size:.72rem;color:var(--text3);margin-bottom:.3rem">Fish Tank → Filtration Tank (Flow 2)
+              </div>
+              <div class="flow-pipe"><span class="pipe-label">🐟</span>
+                <div class="pipe-line">
+                  <div class="pipe-flow"></div>
+                </div><span class="pipe-label">🔵</span>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:.72rem;color:var(--text3);margin-bottom:.3rem">Filtration Tank → Hydroponic Beds
+                (Flow 1)</div>
+              <div class="flow-pipe"><span class="pipe-label">🔵</span>
+                <div class="pipe-line">
+                  <div class="pipe-flow" style="animation-delay:.5s"></div>
+                </div><span class="pipe-label">🌱</span>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:.72rem;color:var(--text3);margin-bottom:.3rem">Hydroponic Beds → Fish Tank (return)
+              </div>
+              <div class="flow-pipe"><span class="pipe-label">🌱</span>
+                <div class="pipe-line">
+                  <div class="pipe-flow"
+                    style="animation-delay:1s;background:linear-gradient(90deg,transparent,var(--green),transparent)">
+                  </div>
+                </div><span class="pipe-label">🐟</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="g2">
+          <div class="chart-card">
+            <div class="chart-title">Flow Sensor 1 — 24h</div>
+            <div class="chart-wrap ch-200"><canvas id="chart-flow1"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Flow Sensor 2 — 24h</div>
+            <div class="chart-wrap ch-200"><canvas id="chart-flow2"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SENSORS MANAGEMENT ===== -->
+      <div class="panel" id="panel-sensors">
+        <div class="breadcrumb"><span>Control</span> › Sensor Management</div>
+        <div class="panel-hdr">
+          <div>
+            <div class="panel-title">Sensor Management</div>
+            <div class="panel-sub">Calibration · health · configuration for all 13 sensors</div>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Sensor</th>
+                <th>Tank</th>
+                <th>Type</th>
+                <th>Current Value</th>
+                <th>Normal Range</th>
+                <th>Status</th>
+                <th>Last Calibration</th>
+                <th>Health</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>pH</td>
+                <td>Fish Tank</td>
+                <td>Analog</td>
+                <td class="text-cyan" id="sm-ph">7.2</td>
+                <td>6.8–7.4</td>
+                <td><span class="badge badge-ok">● Normal</span></td>
+                <td class="monospace">2026-05-01</td>
+                <td><span class="badge badge-ok">Good</span></td>
+                <td><button class="btn-xs btn-detail"
+                    onclick="showModal('calibrateModal','Calibrate pH Sensor','Enter 2-point calibration values using buffer solutions pH 4.0 and pH 7.0.')">Calibrate</button>
+                </td>
+              </tr>
+              <tr>
+                <td>TDS</td>
+                <td>Fish Tank</td>
+                <td>Analog</td>
+                <td class="text-cyan" id="sm-tds">485 ppm</td>
+                <td>400–700</td>
+                <td><span class="badge badge-ok">● Normal</span></td>
+                <td class="monospace">2026-05-01</td>
+                <td><span class="badge badge-ok">Good</span></td>
+                <td><button class="btn-xs btn-detail">Calibrate</button></td>
+              </tr>
+              <tr>
+                <td>Turbidity</td>
+                <td>Fish Tank</td>
+                <td>Analog</td>
+                <td class="text-warn" id="sm-turb">42 NTU</td>
+                <td>0–30</td>
+                <td><span class="badge badge-warn">▲ Elevated</span></td>
+                <td class="monospace">2026-04-15</td>
+                <td><span class="badge badge-warn">Check</span></td>
+                <td><button class="btn-xs btn-detail">Calibrate</button></td>
+              </tr>
+              <tr>
+                <td>Water Temp</td>
+                <td>Fish Tank</td>
+                <td>DS18B20</td>
+                <td class="text-green" id="sm-wtemp">24.3°C</td>
+                <td>22–28</td>
+                <td><span class="badge badge-ok">● Normal</span></td>
+                <td class="monospace">2026-05-01</td>
+                <td><span class="badge badge-ok">Good</span></td>
+                <td><button class="btn-xs btn-detail">Test</button></td>
+              </tr>
+              <tr>
+                <td>SHT31 Air Temp</td>
+                <td>Environment</td>
+                <td>I²C</td>
+                <td class="text-green" id="sm-atemp">28.1°C</td>
+                <td>20–35</td>
+                <td><span class="badge badge-ok">● Normal</span></td>
+                <td class="monospace">2026-05-01</td>
+                <td><span class="badge badge-ok">Good</span></td>
+                <td><button class="btn-xs btn-detail">Test</button></td>
+              </tr>
+              <tr>
+                <td>SHT31 Humidity</td>
+                <td>Environment</td>
+                <td>I²C</td>
+                <td class="text-green" id="sm-hum">55%</td>
+                <td>50–80</td>
+                <td><span class="badge badge-ok">● Normal</span></td>
+                <td class="monospace">2026-05-01</td>
+                <td><span class="badge badge-ok">Good</span></td>
+                <td><button class="btn-xs btn-detail">Test</button></td>
+              </tr>
+              <tr>
+                <td>Float Switch</td>
+                <td>Fish Tank</td>
+                <td>Digital</td>
+                <td class="text-cyan" id="sm-float">HIGH</td>
+                <td>HIGH</td>
+                <td><span class="badge badge-ok">● Active</span></td>
+                <td class="monospace">N/A</td>
+                <td><span class="badge badge-ok">Good</span></td>
+                <td><button class="btn-xs btn-detail">Test</button></td>
+              </tr>
+              <tr>
+                <td>Water Level 1</td>
+                <td>Fish Tank</td>
+                <td>JSN-SR04T</td>
+                <td class="text-cyan" id="sm-wl1">80%</td>
+                <td>50–90</td>
+                <td><span class="badge badge-ok">● Normal</span></td>
+                <td class="monospace">2026-04-20</td>
+                <td><span class="badge badge-ok">Good</span></td>
+                <td><button class="btn-xs btn-detail">Calibrate</button></td>
+              </tr>
+              <tr>
+                <td>Water Level 2</td>
+                <td>Filter Tank</td>
+                <td>JSN-SR04T</td>
+                <td class="text-cyan" id="sm-wl2">75%</td>
+                <td>50–90</td>
+                <td><span class="badge badge-ok">● Normal</span></td>
+                <td class="monospace">2026-04-20</td>
+                <td><span class="badge badge-ok">Good</span></td>
+                <td><button class="btn-xs btn-detail">Calibrate</button></td>
+              </tr>
+              <tr>
+                <td>Water Level 3</td>
+                <td>Drain Tank</td>
+                <td>JSN-SR04T</td>
+                <td class="text-green" id="sm-wl3">40%</td>
+                <td>0–60</td>
+                <td><span class="badge badge-ok">● Normal</span></td>
+                <td class="monospace">2026-04-20</td>
+                <td><span class="badge badge-ok">Good</span></td>
+                <td><button class="btn-xs btn-detail">Calibrate</button></td>
+              </tr>
+              <tr>
+                <td>Water Level 4</td>
+                <td>Supply Tank</td>
+                <td>JSN-SR04T</td>
+                <td class="text-warn" id="sm-wl4">45%</td>
+                <td>20–95</td>
+                <td><span class="badge badge-warn">▲ Low</span></td>
+                <td class="monospace">2026-04-20</td>
+                <td><span class="badge badge-warn">Check</span></td>
+                <td><button class="btn-xs btn-detail">Calibrate</button></td>
+              </tr>
+              <tr>
+                <td>Flow Meter 1</td>
+                <td>Filter→Hydro</td>
+                <td>YF-S201</td>
+                <td class="text-cyan" id="sm-fm1">— L/min</td>
+                <td>0–20</td>
+                <td><span class="badge badge-ok" id="sm-fm1-status">● Normal</span></td>
+                <td class="monospace">2026-05-01</td>
+                <td><span class="badge badge-ok">Good</span></td>
+                <td><button class="btn-xs btn-detail">Test</button></td>
+              </tr>
+              <tr>
+                <td>Flow Meter 2</td>
+                <td>Fish→Filter</td>
+                <td>YF-S201</td>
+                <td class="text-cyan" id="sm-fm2">— L/min</td>
+                <td>0–20</td>
+                <td><span class="badge badge-ok" id="sm-fm2-status">● Normal</span></td>
+                <td class="monospace">2026-05-01</td>
+                <td><span class="badge badge-ok">Good</span></td>
+                <td><button class="btn-xs btn-detail">Test</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ===== ACTUATOR CONTROL ===== -->
+      <div class="panel" id="panel-actuators">
+        <div class="breadcrumb"><span>Control</span> › Actuator Control</div>
+        <div class="panel-hdr">
+          <div>
+            <div class="panel-title">Actuator Control</div>
+            <div class="panel-sub">14 relay channels · PATCH /api/system/actuators/single-update · All actions logged
+            </div>
+          </div>
+          <div class="flex gap1">
+            <span class="badge badge-ok">7 Running</span>
+            <span class="badge badge-info">Auto Mode</span>
+          </div>
+        </div>
+        <div
+          style="font-size:.68rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--cyan);font-weight:600;margin-bottom:.6rem;padding-bottom:.4rem;border-bottom:1px solid rgba(0,212,255,.1)">
+          🐟 Fish Tank Actuators</div>
+        <div class="gauto-sm mb15" id="act-fish-tank"></div>
+        <div
+          style="font-size:.68rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--cyan);font-weight:600;margin-bottom:.6rem;padding-bottom:.4rem;border-bottom:1px solid rgba(0,212,255,.1)">
+          🔵 Filter Tank Actuators</div>
+        <div class="gauto-sm mb15" id="act-filter-tank"></div>
+        <div class="g2">
+          <div>
+            <div
+              style="font-size:.68rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--cyan);font-weight:600;margin-bottom:.6rem;padding-bottom:.4rem;border-bottom:1px solid rgba(0,212,255,.1)">
+              🔺 Supply Tank</div>
+            <div id="act-supply-tank"></div>
+          </div>
+          <div>
+            <div
+              style="font-size:.68rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--danger);font-weight:600;margin-bottom:.6rem;padding-bottom:.4rem;border-bottom:1px solid rgba(239,68,68,.15)">
+              🚨 Alarm Devices</div>
+            <div id="act-alarm-devices"></div>
+          </div>
+        </div>
+        <div class="card mt15">
+          <div class="panel-title" style="font-size:1rem;margin-bottom:.75rem">⚡ PWM Speed Control — Main Pump Only
+          </div>
+          <div class="g2">
+            <div class="card-sm">
+              <div style="font-weight:600;font-size:.85rem;margin-bottom:.75rem">Main Pump Speed</div>
+              <div class="range-group">
+                <div class="range-label">Speed<span class="range-val" id="pump-spd-val">85%</span></div><input
+                  type="range" min="0" max="100" value="85"
+                  oninput="document.getElementById('pump-spd-val').textContent=this.value+'%'">
+              </div>
+              <div style="font-size:.7rem;color:var(--text3);margin-top:.5rem">Note: Pump 2 is ON/OFF only — no PWM
+                control</div>
+            </div>
+            <div class="card-sm">
+              <div style="font-weight:600;font-size:.85rem;margin-bottom:.75rem">Pump 2 — ON/OFF Only</div>
+              <div class="act-card" id="act-pump2-onoff" style="margin-top:.35rem">
+                <div class="act-state-row">
+                  <div class="act-state" id="p2-state">ON</div><label class="toggle-wrap"><input type="checkbox"
+                      id="pump2-toggle" checked onchange="toggleActuator('pump2',this)">
+                    <div class="toggle-track"></div>
+                  </label>
+                </div>
+              </div>
+              <div style="font-size:.7rem;color:var(--text3);margin-top:.4rem">Binary control only — no speed regulation
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      
+      <!-- ===== ALARM CENTER ===== -->
+      <div class="panel" id="panel-alarms">
+        <div class="breadcrumb"><span>Analysis</span> › Alarm Center</div>
+        <div class="panel-hdr">
+          <div>
+            <div class="panel-title">Alarm Center</div>
+            <div class="panel-sub">Active alerts · threshold violations · hardware exceptions</div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="filterAlarms('all',this)">All</button>
+          <button class="tab-btn" onclick="filterAlarms('active',this)">Active</button>
+          <button class="tab-btn" onclick="filterAlarms('resolved',this)">Resolved</button>
+          <button class="tab-btn" onclick="filterAlarms('critical',this)">Critical</button>
+          <button class="tab-btn" onclick="filterAlarms('warn',this)">Warning</button>
+        </div>
+        <div id="alarm-list">
+          <div class="alarm-item ai-warn" data-sev="warn" data-resolved="false">
+            <div class="alarm-sev-dot sev-warn"></div>
+            <div class="alarm-body">
+              <div class="alarm-type at-warn">WARNING — TURBIDITY_ELEVATED</div>
+              <div class="alarm-msg">Fish Tank turbidity at 42 NTU, exceeding safe threshold of 30 NTU. Inspect
+                mechanical filter media.</div>
+              <div class="alarm-meta"><span>📅 2026-05-23 16:05:12</span><span>📍 Fish Tank</span><span>🔧
+                  ESP32_Main_Node</span></div>
+            </div>
+            <div class="alarm-actions">
+              <button class="btn-xs btn-resolve" onclick="resolveAlarm(this)">Resolve</button>
+              <button class="btn-xs btn-detail">Details</button>
+            </div>
+          </div>
+          <div class="alarm-item ai-info" data-sev="info" data-resolved="false">
+            <div class="alarm-sev-dot sev-info"></div>
+            <div class="alarm-body">
+              <div class="alarm-type at-info">INFO — SUPPLY_LEVEL_LOW</div>
+              <div class="alarm-msg">Supply Tank at 45% capacity. Auto-fill valve will trigger below 20%.</div>
+              <div class="alarm-meta"><span>📅 2026-05-23 15:48:33</span><span>📍 Supply Tank</span><span>🔧
+                  ESP32_Main_Node</span></div>
+            </div>
+            <div class="alarm-actions">
+              <button class="btn-xs btn-resolve" onclick="resolveAlarm(this)">Resolve</button>
+              <button class="btn-xs btn-detail">Details</button>
+            </div>
+          </div>
+          <div class="alarm-item ai-info" data-sev="info" data-resolved="true" style="opacity:.5">
+            <div class="alarm-sev-dot" style="background:var(--green)"></div>
+            <div class="alarm-body">
+              <div class="alarm-type" style="color:var(--green)">RESOLVED — pH_ADJUSTED</div>
+              <div class="alarm-msg">pH corrected to 7.2 via Dosing Pump 2 (Base). System stable.</div>
+              <div class="alarm-meta"><span>📅 2026-05-23 14:22:05</span><span>✅ Resolved by: admin</span><span>⏱
+                  14:35:18</span></div>
+            </div>
+            <div class="alarm-actions"><button class="btn-xs btn-detail">Details</button></div>
+          </div>
+        </div>
+      </div>
+
+      
+      <!-- ===== HISTORICAL ANALYTICS ===== -->
+       <!--
+      <div class="panel" id="panel-analytics">
+        <div class="breadcrumb"><span>Analysis</span> › Historical Analytics</div>
+        <div class="panel-hdr">
+          <div>
+            <div class="panel-title">Historical Analytics</div>
+            <div class="panel-sub">Long-term trends · daily/weekly/monthly/yearly aggregates</div>
+          </div>
+          <div class="flex gap1">
+            <select class="form-select-inp" style="width:120px;font-size:.75rem" id="analytics-range"
+              onchange="updateAnalyticsCharts()">
+              <option value="24h">Last 24h</option>
+              <option value="7d" selected>Last 7 Days</option>
+              <option value="30d">Last 30 Days</option>
+              <option value="90d">Last 90 Days</option>
+            </select>
+            <button class="btn btn-outline" onclick="exportReport('csv')">CSV</button>
+          </div>
+        </div>
+        <div class="g2 mb15">
+          <div class="chart-card">
+            <div class="chart-title">pH Trend</div>
+            <div class="chart-wrap ch-200"><canvas id="chart-an-ph"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">TDS Trend</div>
+            <div class="chart-wrap ch-200"><canvas id="chart-an-tds"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Temperature Trend</div>
+            <div class="chart-wrap ch-200"><canvas id="chart-an-temp"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Humidity Trend</div>
+            <div class="chart-wrap ch-200"><canvas id="chart-an-hum"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Turbidity Trend</div>
+            <div class="chart-wrap ch-200"><canvas id="chart-an-turb"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Water Levels Trend</div>
+            <div class="chart-wrap ch-200"><canvas id="chart-an-levels"></canvas></div>
+          </div>
+        </div>
+      </div>
+      -->
+
+      <!-- ===== REPORTS CENTER ===== -->
+      <div class="panel" id="panel-reports">
+        <div class="breadcrumb"><span>Analysis</span> › Reports Center</div>
+        <div class="panel-hdr">
+          <div>
+            <div class="panel-title">Reports Center</div>
+            <div class="panel-sub">Generate PDF · Excel · CSV reports</div>
+          </div>
+        </div>
+        <div class="settings-grid mb15">
+          <div class="settings-card">
+            <h4>Quick Reports</h4>
+            <button class="btn btn-primary" style="width:100%;margin-bottom:.5rem"
+              onclick="exportReport('daily-csv')">📋 Daily Summary (CSV)</button>
+            <button class="btn btn-outline" style="width:100%;margin-bottom:.5rem"
+              onclick="exportReport('weekly-csv')">📋 Weekly Report (CSV)</button>
+            <button class="btn btn-outline" style="width:100%;margin-bottom:.5rem"
+              onclick="exportReport('monthly-csv')">📋 Monthly Report (CSV)</button>
+            <button class="btn btn-outline" style="width:100%" onclick="exportReport('alarms-csv')">🚨 Alarm Log
+              (CSV)</button>
+          </div>
+          <div class="settings-card">
+            <h4>Custom Range Report</h4>
+            <div class="form-group"><label class="form-lbl">From Date</label><input class="form-inp" type="date"
+                id="rpt-from" value="2026-05-01" /></div>
+            <div class="form-group"><label class="form-lbl">To Date</label><input class="form-inp" type="date"
+                id="rpt-to" value="2026-05-23" /></div>
+            <div class="form-group"><label class="form-lbl">Format</label><select class="form-select-inp"
+                id="rpt-format">
+                <option value="csv">CSV</option>
+                <option value="json">JSON</option>
+              </select></div>
+            <button class="btn btn-primary" style="width:100%" onclick="exportCustomReport()">Generate Report</button>
+          </div>
+          <div class="settings-card">
+            <h4>Last Generated</h4>
+            <div class="device-row" style="cursor:pointer;margin:0 0 .5rem">
+              <div>
+                <div class="dev-name">Daily Summary</div>
+                <div class="dev-sub">2026-05-23 · 14.2 KB</div>
+              </div><button class="btn-xs btn-detail" onclick="exportReport('daily-csv')">⬇ CSV</button>
+            </div>
+            <div class="device-row" style="cursor:pointer;margin:0 0 .5rem">
+              <div>
+                <div class="dev-name">Weekly Report</div>
+                <div class="dev-sub">2026-05-17 · 48.7 KB</div>
+              </div><button class="btn-xs btn-detail" onclick="exportReport('weekly-csv')">⬇ CSV</button>
+            </div>
+            <div class="device-row" style="cursor:pointer;margin:0">
+              <div>
+                <div class="dev-name">Alarm Log</div>
+                <div class="dev-sub">2026-05-23 · 8.4 KB</div>
+              </div><button class="btn-xs btn-detail" onclick="exportReport('alarms-csv')">⬇ CSV</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== DATA HISTORY ===== -->
+      <div class="panel" id="panel-history">
+        <div class="breadcrumb"><span>Analysis</span> › Data History</div>
+        <div class="panel-hdr">
+          <div>
+            <div class="panel-title">Data History</div>
+            <div class="panel-sub">GET /api/system/history · Chronological sensor log</div>
+          </div>
+          <div class="flex gap1">
+            <button class="btn btn-primary" onclick="exportHistoryCSV()">⬇ Download CSV</button>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>pH</th>
+                <th>TDS (ppm)</th>
+                <th>Turbidity (NTU)</th>
+                <th>Water Temp (°C)</th>
+                <th>Air Temp (°C)</th>
+                <th>Humidity (%)</th>
+                <th>WL1 (%)</th>
+                <th>WL2 (%)</th>
+                <th>WL3 (%)</th>
+                <th>WL4 (%)</th>
+              </tr>
+            </thead>
+            <tbody id="history-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ===== AUTOMATION SETTINGS ===== -->
+      <div class="panel" id="panel-automation">
+        <div class="breadcrumb"><span>Administration</span> › Automation Settings</div>
+        <div class="panel-hdr">
+          <div>
+            <div class="panel-title">Automation Settings</div>
+            <div class="panel-sub">Admin only · All changes versioned and logged</div>
+          </div>
+          <button class="btn btn-primary" onclick="saveAutomation()">Save All Settings</button>
+        </div>
+        <div class="settings-grid">
+          <div class="settings-card">
+            <h4>pH Limits</h4>
+            <div class="settings-row"><label>Min pH (Alarm)</label><input class="form-inp" type="number" step="0.1"
+                value="6.0" style="width:80px;text-align:center"></div>
+            <div class="settings-row"><label>Max pH (Alarm)</label><input class="form-inp" type="number" step="0.1"
+                value="8.0" style="width:80px;text-align:center"></div>
+            <div class="settings-row"><label>Target pH</label><input class="form-inp" type="number" step="0.1"
+                value="7.0" style="width:80px;text-align:center"></div>
+            <div class="settings-row"><label>Dosing Interval (s)</label><input class="form-inp" type="number"
+                value="300" style="width:80px;text-align:center"></div>
+          </div>
+          <div class="settings-card">
+            <h4>TDS Limits</h4>
+            <div class="settings-row"><label>Min TDS (ppm)</label><input class="form-inp" type="number" value="300"
+                style="width:80px;text-align:center"></div>
+            <div class="settings-row"><label>Max TDS (ppm)</label><input class="form-inp" type="number" value="800"
+                style="width:80px;text-align:center"></div>
+            <div class="settings-row"><label>Alert Threshold</label><input class="form-inp" type="number" value="700"
+                style="width:80px;text-align:center"></div>
+          </div>
+          <div class="settings-card">
+            <h4>Temperature Limits</h4>
+            <div class="settings-row"><label>Min Temp (°C)</label><input class="form-inp" type="number" step="0.5"
+                value="18" style="width:80px;text-align:center"></div>
+            <div class="settings-row"><label>Max Temp (°C)</label><input class="form-inp" type="number" step="0.5"
+                value="30" style="width:80px;text-align:center"></div>
+            <div class="settings-row"><label>Heater On Below</label><input class="form-inp" type="number" step="0.5"
+                value="22" style="width:80px;text-align:center"></div>
+          </div>
+          <div class="settings-card">
+            <h4>Turbidity Limits</h4>
+            <div class="settings-row"><label>Max Safe (NTU)</label><input class="form-inp" type="number" value="30"
+                style="width:80px;text-align:center"></div>
+            <div class="settings-row"><label>Warning Level</label><input class="form-inp" type="number" value="40"
+                style="width:80px;text-align:center"></div>
+            <div class="settings-row"><label>Critical Level</label><input class="form-inp" type="number" value="60"
+                style="width:80px;text-align:center"></div>
+          </div>
+          <div class="settings-card">
+            <h4>Water Level Limits</h4>
+            <div class="settings-row"><label>Fish Tank Min (%)</label><input class="form-inp" type="number" value="40"
+                style="width:80px;text-align:center"></div>
+            <div class="settings-row"><label>Fish Tank Max (%)</label><input class="form-inp" type="number" value="95"
+                style="width:80px;text-align:center"></div>
+            <div class="settings-row"><label>Supply Auto-fill (%)</label><input class="form-inp" type="number"
+                value="20" style="width:80px;text-align:center"></div>
+            <div class="settings-row"><label>Drain Alert (%)</label><input class="form-inp" type="number" value="70"
+                style="width:80px;text-align:center"></div>
+          </div>
+          <div class="settings-card">
+            <h4>Flow Limits</h4>
+            <div class="settings-row"><label>Min Flow (L/min)</label><input class="form-inp" type="number" step="0.5"
+                value="8" style="width:80px;text-align:center"></div>
+            <div class="settings-row"><label>Max Flow (L/min)</label><input class="form-inp" type="number" step="0.5"
+                value="20" style="width:80px;text-align:center"></div>
+            <div class="settings-row"><label>Leak Threshold</label><input class="form-inp" type="number" step="0.5"
+                value="2" style="width:80px;text-align:center"></div>
+          </div>
+          <div class="settings-card">
+            <h4>Pump Retry Settings</h4>
+            <div class="settings-row"><label>Max Retries</label><input class="form-inp" type="number" value="3"
+                style="width:80px;text-align:center"></div>
+            <div class="settings-row"><label>Retry Delay (s)</label><input class="form-inp" type="number" value="30"
+                style="width:80px;text-align:center"></div>
+            <div class="settings-row"><label>Recovery Timer (s)</label><input class="form-inp" type="number" value="120"
+                style="width:80px;text-align:center"></div>
+            <div class="settings-row"><label>Emergency Timeout (s)</label><input class="form-inp" type="number"
+                value="300" style="width:80px;text-align:center"></div>
+          </div>
+          <div class="settings-card">
+            <h4>Humidity Limits</h4>
+            <div class="settings-row"><label>Min Humidity (%)</label><input class="form-inp" type="number" value="40"
+                style="width:80px;text-align:center"></div>
+            <div class="settings-row"><label>Max Humidity (%)</label><input class="form-inp" type="number" value="85"
+                style="width:80px;text-align:center"></div>
+            <div class="settings-row"><label>Fan On Above (%)</label><input class="form-inp" type="number" value="80"
+                style="width:80px;text-align:center"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== USER MANAGEMENT ===== -->
+      <div class="panel" id="panel-users">
+        <div class="breadcrumb"><span>Administration</span> › User Management</div>
+        <div class="panel-hdr">
+          <div>
+            <div class="panel-title">User Management</div>
+            <div class="panel-sub">Admin only · Role-based access control</div>
+          </div>
+          <button class="btn btn-primary"
+            onclick="showModal('addUserModal','Add New User','Fill in user details and assign a role.')">+ Add
+            User</button>
+        </div>
+        <div id="user-list">
+          <div class="user-row">
+            <div class="user-av uav-admin">AD</div>
+            <div class="user-info">
+              <div class="user-name">admin</div>
+              <div class="user-email">admin@aquasys.io</div>
+            </div><span class="badge badge-danger" style="flex-shrink:0">ADMIN</span><span class="badge badge-ok"
+              style="margin-left:.5rem;flex-shrink:0">● Active</span>
+            <div class="user-actions" style="margin-left:auto"><button class="btn-xs btn-detail">Edit</button><button
+                class="btn-xs btn-resolve">Reset PW</button></div>
+          </div>
+          <div class="user-row">
+            <div class="user-av uav-op">OP</div>
+            <div class="user-info">
+              <div class="user-name">operator1</div>
+              <div class="user-email">op1@aquasys.io</div>
+            </div><span class="badge badge-warn" style="flex-shrink:0">OPERATOR</span><span class="badge badge-ok"
+              style="margin-left:.5rem;flex-shrink:0">● Active</span>
+            <div class="user-actions" style="margin-left:auto"><button class="btn-xs btn-detail">Edit</button><button
+                class="btn-xs btn-danger">Remove</button></div>
+          </div>
+          <div class="user-row">
+            <div class="user-av uav-view">VW</div>
+            <div class="user-info">
+              <div class="user-name">viewer_student</div>
+              <div class="user-email">student@minya.edu.eg</div>
+            </div><span class="badge badge-info" style="flex-shrink:0">VIEWER</span><span class="badge badge-ok"
+              style="margin-left:.5rem;flex-shrink:0">● Active</span>
+            <div class="user-actions" style="margin-left:auto"><button class="btn-xs btn-detail">Edit</button><button
+                class="btn-xs btn-danger">Remove</button></div>
+          </div>
+        </div>
+      </div>
+
+      
+
+      
+
+      <!-- ===== PLANTS & FISH ===== -->
+      <div class="panel" id="panel-plants-fish">
+        <div class="breadcrumb"><span>Administration</span> › Plants & Fish</div>
+        <div class="panel-hdr">
+          <div>
+            <div class="panel-title">Plants & Fish Reference</div>
+            <div class="panel-sub">Optimal conditions and current system status</div>
+          </div>
+        </div>
+
+<div class="g2">
+          <div class="card">
+            <div class="panel-title" style="font-size:.9rem;margin-bottom:.75rem">🌿 Watercress Conditions</div>
+            <div style="font-size:.8rem;color:var(--text2);line-height:1.7">
+              Watercress thrives in cool, clean, oxygen-rich water with an optimal pH range of
+              <strong>6.5–7.5</strong>. The current system pH of <strong>6.8</strong> is ideal for healthy
+              growth. The current temperature of <strong>24.3°C</strong> is at the upper end of the
+              recommended range (15–24°C). Continue monitoring water temperature during hot
+              weather to maintain vigorous leaf production and prevent heat stress.
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="panel-title" style="font-size:.9rem;margin-bottom:.75rem">🐠 Goldfish Conditions</div>
+            <div style="font-size:.8rem;color:var(--text2);line-height:1.7">
+              Goldfish perform best in water with a pH between <strong>6.5–8.0</strong>. The current
+              pH of <strong>6.8</strong> is well within the optimal range. The current water temperature
+              of <strong>24.3°C</strong> is suitable but close to the upper recommended limit
+              (18–24°C). Ensure adequate aeration and maintain low ammonia and nitrite levels to
+              promote fish health and support a stable aquaponic ecosystem.
+            </div>
+          </div>
+        </div>
+        <div class="tbl-wrap mb15" style="margin-top: 1.5rem;"></div>
+
+        <div class="tbl-wrap mb15">
+          <table>
+            <thead>
+              <tr>
+                <th>Species</th>
+                <th>Type</th>
+                <th>Optimal pH</th>
+                <th>Optimal Temp (°C)</th>
+                <th>Optimal TDS (ppm)</th>
+                <th>Current pH</th>
+                <th>Current Temp</th>
+                <th>pH Status</th>
+                <th>Temp Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>🌿 Watercress (Nasturtium officinale)</td>
+                <td>Plant</td>
+                <td>6.5 – 7.5</td>
+                <td>15 – 24</td>
+                <td>400 – 800</td>
+                <td class="text-green">6.8 ✓</td>
+                <td class="text-green">24.3 ✓</td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+              </tr>
+
+              <tr>
+                <td>🐠 Goldfish (Carassius auratus)</td>
+                <td>Fish</td>
+                <td>6.5 – 8.0</td>
+                <td>18 – 24</td>
+                <td>200 – 800</td>
+                <td class="text-green">6.8 ✓</td>
+                <td class="text-green">24.3 ✓</td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+              </tr>
+
+               <tr>
+                <td>🌿 Lettuce (Lactuca sativa)</td>
+                <td>Plant</td>
+                <td>6.0 – 7.0</td>
+                <td>18 – 24</td>
+                <td>560 – 840</td>
+                <td class="text-green">6.8 ✓</td>
+                <td class="text-green">24.3 ✓</td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+              </tr>
+
+              <tr>
+                <td>🐟 Tilapia (Oreochromis niloticus)</td>
+                <td>Fish</td>
+                <td>6.5 – 8.0</td>
+                <td>22 – 30</td>
+                <td>200 – 1000</td>
+                <td class="text-green">6.8 ✓</td>
+                <td class="text-green">24.3 ✓</td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+              </tr>
+
+              <tr>
+                <td>🌿 Basil (Ocimum basilicum)</td>
+                <td>Plant</td>
+                <td>5.8 – 6.8</td>
+                <td>20 – 30</td>
+                <td>700 – 1120</td>
+                <td class="text-green">6.8 ✓</td>
+                <td class="text-green">24.3 ✓</td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+              </tr>
+
+              <tr>
+                <td>🐟 Koi (Cyprinus rubrofuscus)</td>
+                <td>Fish</td>
+                <td>6.8 – 8.2</td>
+                <td>18 – 28</td>
+                <td>200 – 1000</td>
+                <td class="text-green">6.8 ✓</td>
+                <td class="text-green">24.3 ✓</td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+              </tr>
+
+              <tr>
+                <td>🌿 Mint (Mentha spp.)</td>
+                <td>Plant</td>
+                <td>6.0 – 7.0</td>
+                <td>18 – 28</td>
+                <td>560 – 840</td>
+                <td class="text-green">6.8 ✓</td>
+                <td class="text-green">24.3 ✓</td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+              </tr>
+
+              <tr>
+                <td>🐟 Common Carp (Cyprinus carpio)</td>
+                <td>Fish</td>
+                <td>6.5 – 8.5</td>
+                <td>20 – 28</td>
+                <td>200 – 1000</td>
+                <td class="text-green">6.8 ✓</td>
+                <td class="text-green">24.3 ✓</td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+              </tr>
+
+              <tr>
+                <td>🌿 Spinach (Spinacia oleracea)</td>
+                <td>Plant</td>
+                <td>6.0 – 7.0</td>
+                <td>15 – 24</td>
+                <td>840 – 1260</td>
+                <td class="text-green">6.8 ✓</td>
+                <td class="text-green">24.3 ✓</td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+              </tr>
+
+              <tr>
+                <td>🐟 Catfish (Clarias gariepinus)</td>
+                <td>Fish</td>
+                <td>6.5 – 8.5</td>
+                <td>24 – 30</td>
+                <td>200 – 1000</td>
+                <td class="text-green">6.8 ✓</td>
+                <td class="text-green">24.3 ✓</td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+              </tr>
+
+              <tr>
+                <td>🌿 Kale (Brassica oleracea var. acephala)</td>
+                <td>Plant</td>
+                <td>6.0 – 7.5</td>
+                <td>15 – 24</td>
+                <td>840 – 1680</td>
+                <td class="text-green">6.8 ✓</td>
+                <td class="text-green">24.3 ✓</td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+              </tr>
+
+              <tr>
+                <td>🐟 Rainbow Trout (Oncorhynchus mykiss)</td>
+                <td>Fish</td>
+                <td>6.5 – 8.0</td>
+                <td>12 – 20</td>
+                <td>200 – 800</td>
+                <td class="text-green">6.8 ✓</td>
+                <td class="text-green">24.3 ⚠</td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+              </tr>
+
+              <tr>
+                <td>🌿 Swiss Chard (Beta vulgaris)</td>
+                <td>Plant</td>
+                <td>6.0 – 7.0</td>
+                <td>16 – 24</td>
+                <td>1260 – 1680</td>
+                <td class="text-green">6.8 ✓</td>
+                <td class="text-green">24.3 ✓</td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+              </tr>
+
+              <tr>
+                <td>🐟 Bluegill (Lepomis macrochirus)</td>
+                <td>Fish</td>
+                <td>6.5 – 8.5</td>
+                <td>20 – 28</td>
+                <td>200 – 1000</td>
+                <td class="text-green">6.8 ✓</td>
+                <td class="text-green">24.3 ✓</td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+              </tr>
+
+              <tr>
+                <td>🌿 Tomato (Solanum lycopersicum)</td>
+                <td>Plant</td>
+                <td>5.8 – 6.8</td>
+                <td>20 – 27</td>
+                <td>1400 – 3500</td>
+                <td class="text-green">6.8 ✓</td>
+                <td class="text-green">24.3 ✓</td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+                <td><span class="badge badge-ok">Optimal</span></td>
+              </tr>
+          </tbody>
+          </table>
+        </div>
+        
+        
+      </div>
+      <!-- ===== ESP32 CAMERA ===== -->
+      <div class="panel" id="panel-camera">
+        <div class="breadcrumb"><span>Camera</span> › ESP32 Live View</div>
+        <div class="panel-hdr">
+          <div>
+            <div class="panel-title">ESP32 Camera</div>
+            <div class="panel-sub">Live capture · History gallery · Timelapse viewer</div>
+          </div>
+          
+        </div>
+
+        <!-- Latest Image Card -->
+        <div class="g2 mb15">
+          <div class="card ecp-latest-card">
+            <div class="ecp-card-hdr">
+              <div>
+                <div class="ecp-section-label">📷 Latest Capture</div>
+                <div id="ecp-latest-ts" class="ecp-ts">—</div>
+              </div>
+              <span id="ecp-latest-badge" class="badge badge-info">Live</span>
+            </div>
+            <div class="ecp-img-wrap" id="ecp-img-wrap">
+              <div class="ecp-placeholder" id="ecp-placeholder">
+                <div class="ecp-placeholder-icon">📷</div>
+                <div class="ecp-placeholder-txt">No image loaded</div>
+                <div class="ecp-placeholder-sub">Press "Capture Image" to take the first shot</div>
+              </div>
+              <img id="ecp-latest-img" class="ecp-img hidden" alt="Latest ESP32 capture" />
+              <div class="ecp-img-overlay" id="ecp-img-overlay">
+                <button class="ecp-overlay-btn" onclick="ecpOpenFullscreen()">⛶ Fullscreen</button>
+              </div>
+            </div>
+            <div class="ecp-actions">
+              <button class="btn btn-primary ecp-capture-btn" id="ecp-capture-btn" onclick="ecpTriggerCapture()">
+                <span id="ecp-capture-icon">📸</span>
+                <span id="ecp-capture-txt">Capture Image</span>
+              </button>
+              <button class="btn btn-outline" onclick="ecpDownloadLatest()" id="ecp-download-btn" disabled
+                title="Download latest image">⬇ Save</button>
+            </div>
+          </div>
+
+          <!-- Stats Card -->
+          <div>
+            <div class="card mb15 ecp-stat-mini-grid">
+              <div class="ecp-stat-mini">
+                <div class="ecp-stat-lbl">Total Captures</div>
+                <div class="ecp-stat-val val-cyan" id="ecp-total">—</div>
+              </div>
+              <div class="ecp-stat-mini">
+                <div class="ecp-stat-lbl">Last Capture</div>
+                <div class="ecp-stat-val" id="ecp-last-time" style="font-size:1rem">—</div>
+              </div>
+              <div class="ecp-stat-mini">
+                <div class="ecp-stat-lbl">Storage Used</div>
+                <div class="ecp-stat-val val-ok" id="ecp-storage">—</div>
+              </div>
+              <div class="ecp-stat-mini">
+                <div class="ecp-stat-lbl">Camera Status</div>
+                <div class="ecp-stat-val" id="ecp-cam-status" style="font-size:1rem">—</div>
+              </div>
+            </div>
+            <div class="card ecp-info-card">
+              <div class="ecp-section-label" style="margin-bottom:.75rem">📡 Camera Info</div>
+              <div class="ecp-info-row"><span class="ecp-info-lbl">Endpoint</span><span
+                  class="monospace ecp-info-val">/api/camera/latest</span></div>
+              <div class="ecp-info-row"><span class="ecp-info-lbl">Trigger</span><span
+                  class="monospace ecp-info-val">POST /api/camera/trigger-capture</span></div>
+              <div class="ecp-info-row"><span class="ecp-info-lbl">History</span><span
+                  class="monospace ecp-info-val">GET /api/camera/history</span></div>
+              <div class="ecp-info-row"><span class="ecp-info-lbl">Module</span><span class="ecp-info-val"
+                  style="color:var(--cyan)">ESP32-CAM · OV2640</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gallery / Timelapse Section -->
+        <div class="card">
+          <div class="ecp-gallery-hdr">
+            <div class="ecp-section-label" style="margin-bottom:0">🗂 Image History</div>
+            <div class="flex gap1">
+              <!-- View toggle -->
+              <div class="ecp-view-toggle">
+                <button class="ecp-toggle-btn active" id="ecp-btn-gallery" onclick="ecpSetView('gallery')">⊞
+                  Gallery</button>
+                <button class="ecp-toggle-btn" id="ecp-btn-timelapse" onclick="ecpSetView('timelapse')">▶
+                  Timelapse</button>
+              </div>
+              <button class="btn btn-outline" id="ecp-load-history-btn" onclick="ecpLoadHistory()">View History</button>
+            </div>
+          </div>
+
+          <!-- Loading state -->
+          <div class="ecp-loading hidden" id="ecp-history-loading">
+            <div class="spinner"></div>
+            <span style="font-size:.8rem;color:var(--text2);margin-left:.75rem">Fetching image history…</span>
+          </div>
+
+          <!-- Empty state -->
+          <div class="ecp-empty-state hidden" id="ecp-history-empty">
+            <div style="font-size:2rem;margin-bottom:.5rem">📂</div>
+            <div style="font-size:.82rem;color:var(--text2)">No history found. Capture some images first.</div>
+          </div>
+
+          <!-- ===== GALLERY VIEW ===== -->
+          <div id="ecp-view-gallery" class="hidden">
+            <div class="ecp-gallery-meta" id="ecp-gallery-meta"></div>
+            <div class="ecp-gallery-grid" id="ecp-gallery-grid"></div>
+          </div>
+
+          <!-- ===== TIMELAPSE VIEW ===== -->
+          <div id="ecp-view-timelapse" class="hidden">
+            <div class="ecp-tl-stage">
+              <div class="ecp-tl-img-wrap">
+                <img id="ecp-tl-img" class="ecp-tl-img" alt="Timelapse frame" src="" />
+                <div class="ecp-tl-frame-badge" id="ecp-tl-frame-badge">Frame 0 / 0</div>
+                <div class="ecp-tl-ts-overlay" id="ecp-tl-ts"></div>
+              </div>
+            </div>
+
+            <!-- Progress bar -->
+            <div class="ecp-tl-progress-wrap">
+              <div class="ecp-tl-progress-bg">
+                <div class="ecp-tl-progress-fill" id="ecp-tl-progress"></div>
+              </div>
+              <input type="range" id="ecp-tl-scrub" class="ecp-tl-scrub" min="0" value="0" step="1"
+                oninput="ecpScrubTo(this.value)" />
+            </div>
+
+            <!-- Controls -->
+            <div class="ecp-tl-controls">
+              <button class="ecp-ctl-btn" onclick="ecpTLFirst()" title="First frame">⏮</button>
+              <button class="ecp-ctl-btn" onclick="ecpTLPrev()" title="Previous">⏪</button>
+              <button class="ecp-ctl-btn ecp-play-btn" id="ecp-play-btn" onclick="ecpTLTogglePlay()"
+                title="Play / Pause">▶</button>
+              <button class="ecp-ctl-btn" onclick="ecpTLNext()" title="Next">⏩</button>
+              <button class="ecp-ctl-btn" onclick="ecpTLLast()" title="Last frame">⏭</button>
+
+              <!-- Speed control -->
+              <div class="ecp-speed-wrap">
+                <span class="ecp-speed-lbl">Speed</span>
+                <select class="form-select-inp ecp-speed-sel" id="ecp-speed-sel" onchange="ecpSetSpeed(this.value)">
+                  <option value="2000">0.5×</option>
+                  <option value="1000" selected>1×</option>
+                  <option value="500">2×</option>
+                  <option value="250">4×</option>
+                  <option value="100">10×</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== CAMERA FULLSCREEN OVERLAY ===== -->
+      <div class="ecp-fullscreen-overlay hidden" id="ecp-fullscreen-overlay" onclick="ecpCloseFullscreen()">
+        <div class="ecp-fs-box" onclick="event.stopPropagation()">
+          <button class="ecp-fs-close" onclick="ecpCloseFullscreen()">✕</button>
+          <img id="ecp-fs-img" class="ecp-fs-img" alt="Full resolution capture" />
+          <div class="ecp-fs-meta" id="ecp-fs-meta"></div>
+        </div>
+      </div>
+
+
+         <!-- ===== ABOUT US ===== -->
+    <div class="panel" id="panel-about">
+      <div class="breadcrumb"><span>About Us</span></div>
+
+      <!-- Hero -->
+      <div class="about-hero">
+        <div class="about-hero-title"><span>Automated Aquaponic System</span></div>
+        <div class="about-hero-desc">Smart Automated Aquaponics System is an IoT-based sustainable farming platform 
+          developed as a graduation project at Minia University. The system combines aquaculture (fish farming) 
+          and hydroponics (soilless plant cultivation) into a single, self-sustaining ecosystem 
+          where nutrient-rich fish waste is biologically converted into essential nutrients for plants, 
+          while the plants naturally filter and purify the water before it is recirculated back to the fish tank. 
+          By integrating advanced IoT technologies, environmental sensors, real-time monitoring, 
+          and intelligent automation, the platform continuously monitors and controls critical parameters 
+          such as water temperature, pH, water level, turbidity, total dissolved solids (TDS), and environmental 
+          conditions to maintain optimal growth for both fish and plants. Through a web-based dashboard, 
+          users can remotely monitor system performance, visualize live sensor data, receive alerts, and manage automated components, creating a resource-efficient, environmentally friendly, and scalable solution for modern sustainable agriculture.</div>
+        <div class="about-hero-tags">
+          <span class="about-hero-tag">Aquaponics</span>
+          <span class="about-hero-tag">IoT</span>
+          <span class="about-hero-tag">ESP32</span>
+          <span class="about-hero-tag">Automation</span>
+          <span class="about-hero-tag">Water Level Detection</span>
+          <span class="about-hero-tag">Real-Time Monitoring</span>
+          <span class="about-hero-tag">Smart Farming</span>
+          <span class="about-hero-tag">Wi-Fi Connectivity</span>
+          <span class="about-hero-tag">Data Visualization</span>
+          <span class="about-hero-tag">Graduation Project 2026</span>
+        </div>
+      </div>
+
+      <!-- Project Objectives -->
+      <div class="about-section-title">🎯 Project Objectives</div>
+      <div class="obj-grid mb15">
+        <div class="obj-card">
+          <div class="obj-icon">🤖</div>
+          <div class="obj-title">Automation</div>
+          <div class="obj-desc">Automate dosing, valve control, and pump operations based on real-time sensor data without manual intervention.</div>
+        </div>
+        <div class="obj-card">
+          <div class="obj-icon">🌿</div>
+          <div class="obj-title">Sustainability</div>
+          <div class="obj-desc">Create a closed-loop ecosystem that minimizes waste and maximizes resource efficiency through aquaponics.</div>
+        </div>
+        <div class="obj-card">
+          <div class="obj-icon">💧</div>
+          <div class="obj-title">Water Conservation</div>
+          <div class="obj-desc">Recirculate water between fish and plant sections, reducing consumption by up to 90% versus traditional farming.</div>
+        </div>
+        <div class="obj-card">
+          <div class="obj-icon">🌾</div>
+          <div class="obj-title">Smart Agriculture</div>
+          <div class="obj-desc">Apply precision agriculture techniques using sensors, algorithms, and automated control for optimal yield.</div>
+        </div>
+        <div class="obj-card">
+          <div class="obj-icon">📡</div>
+          <div class="obj-title">Remote Monitoring</div>
+          <div class="obj-desc">Monitor and control the entire system remotely from any device through the web dashboard in real-time.</div>
+        </div>
+        <div class="obj-card">
+          <div class="obj-icon">📊</div>
+          <div class="obj-title">Data Analytics</div>
+          <div class="obj-desc">Collect, store, and analyze historical sensor data to identify trends and optimize system performance.</div>
+        </div>
+      </div>
+
+      <!-- Team Members -->
+      <div class="about-section-title">👥 Meet the Team</div>
+      <div class="team-grid mb15">
+        <!-- Member 1 — Edit name, role, and description as needed -->
+        <div class="team-card">
+          <div class="team-leader-badge">Team Lead</div>
+          <div class="team-photo"><span class="team-photo-placeholder">👤</span></div>
+          <div class="team-name">Yusuf Ahmed Abd EL-Salam</div>
+          <div class="team-role">Software (Embedded Systems) Engineer</div>
+          <div class="team-desc">Develops the ESP32 firmware to acquire data and program sensor acquisition, actuator control, multitasking, and communication protocols</div>
+        </div>
+        <!-- Member 2 -->
+        <div class="team-card">
+          <div class="team-photo"><span class="team-photo-placeholder">👤</span></div>
+          <div class="team-name">Ahmed Ragab Ahmed</div>
+          <div class="team-role">Electrical Engineer</div>
+          <div class="team-desc">Designs and implements the electrical system, including power distribution, wiring, protection circuits, and hardware integration for all electronic components.</div>
+        </div>
+        <!-- Member 3 -->
+        <div class="team-card">
+          <div class="team-photo"><span class="team-photo-placeholder">👤</span></div>
+          <div class="team-name">Hager Ahmed Mohammed-Samir</div>
+          <div class="team-role">Automation and Control Engineer</div>
+          <div class="team-desc">Develops and optimizes the automated control system and conditions that manage sensors, pumps, valves, and system operations, and implements the system's automation logic.</div>
+        </div>
+        <!-- Member 4 -->
+        <div class="team-card">
+          <div class="team-photo"><span class="team-photo-placeholder">👤</span></div>
+          <div class="team-name">Merna Nagah Abd-allah</div>
+          <div class="team-role">Biological Engineer</div>
+          <div class="team-desc">Designs and oversees the aquaponic ecosystem by managing fish health, plant growth, water quality, and biological filtration processes.</div>
+        </div>
+        <!-- Member 5 -->
+        <div class="team-card">
+          <div class="team-photo"><span class="team-photo-placeholder">👤</span></div>
+          <div class="team-name">Nouran Emad Ahmed</div>
+          <div class="team-role">IoT and Website Engineer</div>
+          <div class="team-desc">Develops the cloud platform and web dashboard to enable real-time monitoring, remote control, data visualization, and user interaction with the aquaponic system.</div>
+        </div>
+        <!-- Member 6 -->
+        <div class="team-card">
+          <div class="team-photo"><span class="team-photo-placeholder">👤</span></div>
+          <div class="team-name">Yusuf Ahmed Fathy</div>
+          <div class="team-role">Mechanical Engineer</div>
+          <div class="team-desc">Designs, builds, and assembles the physical aquaponic structure, including tanks, piping, and the supporting frame.</div>
+        </div>
+      </div>
+
+      <!-- Technologies Used -->
+      <div class="about-section-title">🛠️ Technologies Used</div>
+      <div class="tech-grid mb15">
+        <div class="tech-card"><span class="tech-icon">⚡</span><div class="tech-name">ESP32</div><div class="tech-desc">Main microcontroller for sensor reading and actuator control</div></div>
+        <div class="tech-card"><span class="tech-icon">📷</span><div class="tech-name">ESP32-CAM</div><div class="tech-desc">Image capture module for visual monitoring of the system</div></div>
+        <div class="tech-card"><span class="tech-icon">🔬</span><div class="tech-name">Sensors</div><div class="tech-desc">pH, TDS, turbidity, temperature, humidity, ultrasonic sensors</div></div>
+        <div class="tech-card"><span class="tech-icon">🖥️</span><div class="tech-name">PCB Design</div><div class="tech-desc">Custom relay board with PCF8574T I²C expanders</div></div>
+        <div class="tech-card"><span class="tech-icon">🔗</span><div class="tech-name">REST APIs</div><div class="tech-desc">Spring Boot REST endpoints for all system operations</div></div>
+        <div class="tech-card"><span class="tech-icon">🌐</span><div class="tech-name">HTML</div><div class="tech-desc">Semantic markup for the dashboard structure</div></div>
+        <div class="tech-card"><span class="tech-icon">🎨</span><div class="tech-name">CSS</div><div class="tech-desc">Glassmorphism dark theme with animations and responsive layout</div></div>
+        <div class="tech-card"><span class="tech-icon">⚙️</span><div class="tech-name">JavaScript</div><div class="tech-desc">Real-time data polling, chart rendering, and UI interactions</div></div>
+        <div class="tech-card"><span class="tech-icon">☕</span><div class="tech-name">Backend Technologies</div><div class="tech-desc">Spring Boot · Supabase PostgreSQL · MQTT · JWT Auth</div></div>
+      </div>
+
+      <!-- University -->
+      <div class="about-uni-card">
+        <div class="about-uni-icon">🎓</div>
+        <div class="about-uni-info">
+          <h3>Faculty of Engineering — Minia University</h3>
+          <p>This project was developed as a graduation project for the academic year 2025–2026. It represents the culmination of our studies in electronics, computer engineering, and software development, applied to solving real-world food sustainability challenges.</p>
+        </div>
+      </div>
+    </div>
+    
+
+    
+
+      <!-- ===== PROFILE ===== -->
+      <div class="panel" id="panel-profile">
+        <div class="breadcrumb"><span>Profile</span></div>
+        <div class="panel-hdr">
+          <div>
+            <div class="panel-title">My Profile</div>
+            <div class="panel-sub">Account settings and security</div>
+          </div>
+        </div>
+        <div class="g2">
+          <div class="card">
+            <div class="flex gap2 mb15">
+              <div class="user-av uav-admin" style="width:56px;height:56px;font-size:1.2rem">AD</div>
+              <div>
+                <div style="font-weight:700;font-size:1.1rem">admin</div>
+                <div class="text-dim monospace">admin@aquasys.io</div><span class="badge badge-danger"
+                  style="margin-top:.3rem">ADMIN</span>
+              </div>
+            </div>
+            <div class="form-group"><label class="form-lbl">Display Name</label><input class="form-inp"
+                value="System Administrator" /></div>
+            <div class="form-group"><label class="form-lbl">Email</label><input class="form-inp" type="email"
+                value="admin@aquasys.io" /></div>
+            <button class="btn btn-primary">Update Profile</button>
+          </div>
+          <div class="card">
+            <h4 style="font-size:.85rem;color:var(--cyan);margin-bottom:1rem">Change Password</h4>
+            <div class="form-group"><label class="form-lbl">Current Password</label><input class="form-inp"
+                type="password" placeholder="••••••••" /></div>
+            <div class="form-group"><label class="form-lbl">New Password</label><input class="form-inp" type="password"
+                placeholder="Min 8 chars" /></div>
+            <div class="form-group"><label class="form-lbl">Confirm Password</label><input class="form-inp"
+                type="password" placeholder="Repeat new password" /></div>
+            <button class="btn btn-warn">Change Password</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ===== SENSOR ALERT MODAL ===== -->
+  <div id="sensor-alert-overlay" style="display:none;position:fixed;inset:0;z-index:9000;
+    background:rgba(0,0,0,.72);align-items:center;justify-content:center;
+    backdrop-filter:blur(6px)">
+    <div class="sa-box">
+      <div class="sa-header">
+        <div style="display:flex;align-items:center;gap:.65rem">
+          <span style="font-size:1.3rem">🚨</span>
+          <div>
+            <div class="sa-title">Sensor Alert</div>
+            <div class="sa-count" style="font-size:.72rem;color:var(--text3);margin-top:1px">— sensors out of range</div>
+          </div>
+        </div>
+        <span class="badge badge-warn" style="animation:pulse 1.5s infinite">ACTIVE</span>
+      </div>
+      <div class="sa-body"></div>
+      <div class="sa-footer">
+        <button class="btn btn-primary" onclick="acknowledgeSensorAlerts()">✓ Acknowledge</button>
+      </div>
+    </div>
+  </div>
+
+    <!-- ===== CONFIRMATION MODAL ===== -->
+  <div class="modal-overlay" id="confirm-modal">
+    <div class="modal-box">
+      <div class="modal-title" id="modal-title">Confirm Action</div>
+      <div class="modal-body" id="modal-body">Are you sure you want to perform this action?</div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="confirmAction()">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js" defer></script>
+</body>
+
+</html>
