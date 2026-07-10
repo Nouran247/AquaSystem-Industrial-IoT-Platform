@@ -30,6 +30,7 @@ const POLL = {
   actuators: 4000,
   alarms:    8000,
   camera:    12000,
+  history:   30000,
 };
 
 const IMG_BASE = 'http://localhost:8080';;   // prepend if images are on a different host/path
@@ -68,6 +69,7 @@ const State = {
   },
   charts: {},      // Chart.js instances by id
   timers: {},      // setInterval handles
+  rt: { buffers: {}, timer: null }, // real-time chart rolling buffers + ticker
   activePanel: 'overview',
   sidebarOpen: false,
   notifOpen: false,
@@ -81,8 +83,6 @@ const State = {
     waterTemp:      { min: 22,   max: 28   },
     sht31Temp:      { min: 20,   max: 35   },
     sht31Humidity:  { min: 50,   max: 80   },
-    waterLevel1:    { min: 50,   max: 90   },
-    waterLevel2:    { min: 50,   max: 90   },
     waterLevel3:    { min: 0,    max: 60   },
     waterLevel4:    { min: 20,   max: 95   },
     flowMeter1:     { min: 0,    max: 20   },
@@ -383,8 +383,6 @@ const SENSOR_FIELD_LABELS = {
   waterTemp:      'Water Temperature',
   sht31Temp:      'Air Temperature (SHT31)',
   sht31Humidity:  'Humidity (SHT31)',
-  waterLevel1:    'Water Level 1 (Fish Tank)',
-  waterLevel2:    'Water Level 2 (Filter Tank)',
   waterLevel3:    'Water Level 3 (Drain Tank)',
   waterLevel4:    'Water Level 4 (Supply Tank)',
   flowMeter1:     'Flow Meter 1 (Filter→Hydro)',
@@ -600,10 +598,21 @@ function showLoginForm() {
 /* =====================================================================
    INIT
    ===================================================================== */
+const ACTIVE_PANEL_KEY = 'aqua_active_panel';
+
 function initDashboard() {
   loadSensorRanges();
   startClock();
-  switchPanel('overview');
+
+  // Restore the panel the user was on before a browser refresh, if valid.
+  let startPanel = 'overview';
+  try {
+    const saved = sessionStorage.getItem(ACTIVE_PANEL_KEY);
+    if (saved && document.getElementById(`panel-${saved}`)) startPanel = saved;
+  } catch (e) { /* ignore */ }
+
+  switchPanel(startPanel);
+  initRealtimeCharts();
   startAllPolls();
   buildActuatorPanels();
 }
@@ -637,6 +646,7 @@ function startAllPolls() {
   State.timers.alarms       = setInterval(fetchAlarms,       POLL.alarms);
   State.timers.camera       = setInterval(fetchCameraLatest, POLL.camera);
   State.timers.deviceStatus = setInterval(pollDeviceStatus,  10000);
+  State.timers.history      = setInterval(fetchHistory,      POLL.history);
 }
 
 /* =====================================================================
@@ -651,9 +661,12 @@ async function fetchSensors() {
     State.sensors.raw = data;
     // Update last-known cache — only overwrite when value is non-null
     const fields = ['phValue','turbidityRaw','tdsRaw','waterTemp','sht31Temp',
-                    'sht31Humidity','fishTankFloat','waterLevel1','waterLevel2',
+                    'sht31Humidity','fishTankFloat',
                     'waterLevel3','waterLevel4','flowMeter1','flowMeter2',
-                    'filterTankFloat','loggedAt'];
+                    'filterTankFloat',
+                    'filterTankFloat_overflow','fishTankFloat_underflow',
+                    'filterTankFloat_underflow','fishTankFloat_overflow',
+                    'loggedAt'];
     fields.forEach(f => {
       if (data[f] !== null && data[f] !== undefined) {
         State.sensors.last[f] = data[f];
@@ -666,6 +679,39 @@ async function fetchSensors() {
   }
 }
 
+/**
+ * Resolve the display state of a boolean float-switch field.
+ * known=false when no reading has ever been received.
+ * triggered=true means the switch has tripped (overflow/underflow condition).
+ */
+function floatSwitchState(field) {
+  const v = State.sensors.last[field];
+  const known = v !== null && v !== undefined;
+  const triggered = known && isOn(v);
+  return { known, triggered };
+}
+
+/** Render one of the four float-switch dashboard cards + its status badge. */
+function renderFloatSwitchCard(field, cardId, valId, statusId) {
+  const { known, triggered } = floatSwitchState(field);
+  const card   = document.getElementById(cardId);
+  const valEl  = document.getElementById(valId);
+  const stEl   = document.getElementById(statusId);
+
+  if (valEl) {
+    valEl.textContent = known ? (triggered ? 'TRIGGERED' : 'NORMAL') : 'N/A';
+    valEl.className   = 'sc-val ' + (known ? (triggered ? 'val-danger' : 'val-ok') : 'text-dim');
+  }
+  if (stEl) {
+    stEl.textContent = known ? (triggered ? '● Triggered' : '● Normal') : '○ Unknown';
+    stEl.className   = 'sc-status ' + (known ? (triggered ? 'ss-danger' : 'ss-ok') : 'ss-warn');
+  }
+  if (card) {
+    card.classList.remove('sc-ok', 'sc-warn', 'sc-cyan', 'sc-danger');
+    card.classList.add(known ? (triggered ? 'sc-danger' : 'sc-ok') : 'sc-warn');
+  }
+}
+
 function sv(field, decimals = 1) {
   // Returns last-known sensor value formatted, or 'N/A' on first load
   const v = State.sensors.last[field];
@@ -675,7 +721,6 @@ function sv(field, decimals = 1) {
 
 function renderSensors() {
   const L = State.sensors.last;
-  const ts = L.loggedAt ? fmtRelative(L.loggedAt) : '';
 
   // ── Overview Stat Cards ──────────────────────────────────────
   setText('ov-ph',   sv('phValue'));
@@ -685,14 +730,12 @@ function renderSensors() {
   setText('ov-turb', sv('turbidityRaw', 0));
 
   // ── Fish Tank Panel ──────────────────────────────────────────
-  setText('ft-wl1',    sv('waterLevel1', 0));
   setText('ft-temp',   sv('waterTemp'));
   setText('ft-tds',    sv('tdsRaw', 0));
   setText('ft-ph',     sv('phValue'));
   setText('ft-turb',   sv('turbidityRaw', 0));
   setText('ft-airtemp',sv('sht31Temp'));
   setText('ft-hum',    sv('sht31Humidity', 0));
-  setText('ft-wl1-t',  ts ? `Updated ${ts}` : '');
 
   // Float switch
   const fsEl = document.getElementById('ft-float-val');
@@ -702,8 +745,14 @@ function renderSensors() {
     fsEl.className   = 'sc-val ' + (fval ? 'text-green' : 'val-warn');
   }
 
+  // Fish Tank overflow / underflow float switches
+  renderFloatSwitchCard('fishTankFloat_overflow',  'card-ft-float-of', 'ft-float-of-val', 'ft-float-of-status');
+  renderFloatSwitchCard('fishTankFloat_underflow', 'card-ft-float-uf', 'ft-float-uf-val', 'ft-float-uf-status');
+
   // ── Filtration Tank Panel ────────────────────────────────────
-  setText('filt-wl2', sv('waterLevel2', 0));
+  // Filter Tank overflow / underflow float switches
+  renderFloatSwitchCard('filterTankFloat_overflow',  'card-filt-float-of', 'filt-float-of-val', 'filt-float-of-status');
+  renderFloatSwitchCard('filterTankFloat_underflow', 'card-filt-float-uf', 'filt-float-uf-val', 'filt-float-uf-status');
 
   // Flow Meter 1 (Filter Tank → Growing Beds)
   const fm1Val = L.flowMeter1;
@@ -757,8 +806,6 @@ function renderSensors() {
   setText('hydro-ph',  sv('phValue'));
 
   // ── Sensor Bars (progress) ───────────────────────────────────
-  updateSensorBar('ft-wl1',  L.waterLevel1,   0, 100);
-  updateSensorBar('filt-wl2', L.waterLevel2,  0, 100);
   updateSensorBar('drain-wl3', L.waterLevel3, 0, 100);
   updateSensorBar('sup-wl4',  L.waterLevel4,  0, 100);
 
@@ -792,8 +839,6 @@ function renderTankGrid() {
   if (!el) return;
   const L = State.sensors.last;
   const tanks = [
-    { label: 'Fish Tank (WL1)',   val: L.waterLevel1, icon: '🐟' },
-    { label: 'Filter Tank (WL2)', val: L.waterLevel2, icon: '🔵' },
     { label: 'Drain Tank (WL3)',  val: L.waterLevel3, icon: '⬇' },
     { label: 'Supply Tank (WL4)', val: L.waterLevel4, icon: '🔺' },
   ];
@@ -829,10 +874,12 @@ function updateSensorTable() {
     { id: 'sm-atemp', val: sv('sht31Temp'),          unit: '°C' },
     { id: 'sm-hum',   val: sv('sht31Humidity', 0),  unit: '%' },
     { id: 'sm-float', val: L.fishTankFloat !== null && L.fishTankFloat !== undefined ? (L.fishTankFloat ? 'HIGH' : 'LOW') : 'N/A', unit: '' },
-    { id: 'sm-wl1',   val: sv('waterLevel1', 0),    unit: '%' },
-    { id: 'sm-wl2',   val: sv('waterLevel2', 0),    unit: '%' },
+    { id: 'sm-ft-of',   val: floatSwitchState('fishTankFloat_overflow').known   ? (floatSwitchState('fishTankFloat_overflow').triggered   ? 'TRIGGERED' : 'NORMAL') : 'N/A', unit: '' },
+    { id: 'sm-ft-uf',   val: floatSwitchState('fishTankFloat_underflow').known  ? (floatSwitchState('fishTankFloat_underflow').triggered  ? 'TRIGGERED' : 'NORMAL') : 'N/A', unit: '' },
     { id: 'sm-wl3',   val: sv('waterLevel3', 0),    unit: '%' },
     { id: 'sm-wl4',   val: sv('waterLevel4', 0),    unit: '%' },
+    { id: 'sm-filt-of', val: floatSwitchState('filterTankFloat_overflow').known  ? (floatSwitchState('filterTankFloat_overflow').triggered  ? 'TRIGGERED' : 'NORMAL') : 'N/A', unit: '' },
+    { id: 'sm-filt-uf', val: floatSwitchState('filterTankFloat_underflow').known ? (floatSwitchState('filterTankFloat_underflow').triggered ? 'TRIGGERED' : 'NORMAL') : 'N/A', unit: '' },
     { id: 'sm-fm1',   val: sv('flowMeter1'),         unit: ' L/min' },
     { id: 'sm-fm2',   val: sv('flowMeter2'),         unit: ' L/min' },
   ];
@@ -851,10 +898,12 @@ function updateSensorTable() {
     { field: 'sht31Temp',     liveVal: L.sht31Temp,     disp: sv('sht31Temp')+'°C',   unit: '°C'    },
     { field: 'sht31Humidity', liveVal: L.sht31Humidity, disp: sv('sht31Humidity',0)+'%', unit: '%'  },
     { field: null,            liveVal: null,             disp: L.fishTankFloat !== null && L.fishTankFloat !== undefined ? (L.fishTankFloat ? 'HIGH' : 'LOW') : 'N/A', unit: '' }, // Float switch — no numeric range
-    { field: 'waterLevel1',   liveVal: L.waterLevel1,   disp: sv('waterLevel1',0)+'%',unit: '%'     },
-    { field: 'waterLevel2',   liveVal: L.waterLevel2,   disp: sv('waterLevel2',0)+'%',unit: '%'     },
+    { field: null, floatField: 'fishTankFloat_overflow',   liveVal: null, disp: null, unit: '' },
+    { field: null, floatField: 'fishTankFloat_underflow',  liveVal: null, disp: null, unit: '' },
     { field: 'waterLevel3',   liveVal: L.waterLevel3,   disp: sv('waterLevel3',0)+'%',unit: '%'     },
     { field: 'waterLevel4',   liveVal: L.waterLevel4,   disp: sv('waterLevel4',0)+'%',unit: '%'     },
+    { field: null, floatField: 'filterTankFloat_overflow',  liveVal: null, disp: null, unit: '' },
+    { field: null, floatField: 'filterTankFloat_underflow', liveVal: null, disp: null, unit: '' },
     { field: 'flowMeter1',    liveVal: L.flowMeter1,    disp: sv('flowMeter1')+' L/min', unit: ' L/min' },
     { field: 'flowMeter2',    liveVal: L.flowMeter2,    disp: sv('flowMeter2')+' L/min', unit: ' L/min' },
   ];
@@ -863,6 +912,22 @@ function updateSensorTable() {
   tableRows.forEach((info, i) => {
     const tr = trs[i];
     if (!tr) return;
+
+    // Boolean float-switch rows (no numeric range) — resolve their display text/status here
+    if (info.floatField) {
+      const { known, triggered } = floatSwitchState(info.floatField);
+      info.disp = known ? (triggered ? 'TRIGGERED' : 'NORMAL') : 'N/A';
+      const valTd = tr.querySelector('td:nth-child(4)');
+      if (valTd) valTd.textContent = info.disp;
+      const statusTd = tr.querySelector('td:nth-child(6)');
+      if (statusTd) {
+        const span = statusTd.querySelector('span') || document.createElement('span');
+        span.className   = `badge ${known ? (triggered ? 'badge-danger' : 'badge-ok') : 'badge-info'}`;
+        span.textContent = known ? (triggered ? '● Triggered' : '● Normal') : 'N/A';
+        if (!statusTd.querySelector('span')) statusTd.appendChild(span);
+      }
+      return;
+    }
 
     // Column 4 (index 3) — Current Value
     const valTd = tr.querySelector('td:nth-child(4)');
@@ -1098,9 +1163,13 @@ function renderHistoryTable() {
   if (!tbody) return;
   const recs = State.history.records.slice(0, 200); // cap at 200 rows
   if (!recs.length) {
-    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--text3);padding:1.5rem">No history records available.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;color:var(--text3);padding:1.5rem">No history records available.</td></tr>`;
     return;
   }
+  const floatCell = (v) => {
+    if (v === null || v === undefined) return 'N/A';
+    return isOn(v) ? 'TRIGGERED' : 'NORMAL';
+  };
   tbody.innerHTML = recs.map(r => `
     <tr>
       <td class="monospace" style="white-space:nowrap">${fmtTime(r.loggedAt)}</td>
@@ -1110,10 +1179,12 @@ function renderHistoryTable() {
       <td>${fmtNum(r.waterTemp)}</td>
       <td>${fmtNum(r.sht31Temp)}</td>
       <td>${fmtNum(r.sht31Humidity, 0)}</td>
-      <td>${fmtNum(r.waterLevel1, 0)}</td>
-      <td>${fmtNum(r.waterLevel2, 0)}</td>
+      <td>${floatCell(r.fishTankFloat_overflow)}</td>
+      <td>${floatCell(r.fishTankFloat_underflow)}</td>
       <td>${fmtNum(r.waterLevel3, 0)}</td>
       <td>${fmtNum(r.waterLevel4, 0)}</td>
+      <td>${floatCell(r.filterTankFloat_overflow)}</td>
+      <td>${floatCell(r.filterTankFloat_underflow)}</td>
     </tr>`).join('');
 }
 
@@ -1160,57 +1231,82 @@ function upsertChart(canvasId, config) {
 }
 
 function renderAllCharts() {
-  renderOverviewCharts();
-  renderFishTankCharts();
+  initRealtimeCharts();
   renderAnalyticsCharts();
-  renderDrainChart();
-  renderSupplyChart();
-  renderFlowCharts();
 }
 
-function buildChartData(records, field, label, color) {
-  const limited = records.slice(0, 100).reverse();
-  return {
-    type: 'line',
-    data: {
-      labels: limited.map(r => {
-        const d = new Date(r.loggedAt);
-        return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
-      }),
-      datasets: [makeLineDataset(label, limited.map(r => r[field] ?? null), color)],
-    },
-    options: { ...CHART_DEFAULTS },
-  };
+/* =====================================================================
+   REAL-TIME SCROLLING CHARTS
+   Fixed rolling time window; ticks forward every second even when no
+   new backend reading has arrived, so the timeline never freezes.
+   ===================================================================== */
+const RT_WINDOW_MS = 60000; // default rolling window: last 60 seconds
+const RT_TICK_MS   = 1000;  // advance the timeline once per second
+
+// Overview pH/Temp trend widgets show a longer 60-minute rolling window
+// while every other real-time chart keeps the default 60-second window.
+const RT_WINDOW_MS_60MIN = 60 * 60 * 1000;
+
+const RT_CHARTS = [
+  { canvas: 'chart-ov-ph',     field: 'phValue',       label: 'pH',           color: '#00D4FF', windowMs: RT_WINDOW_MS_60MIN },
+  { canvas: 'chart-ov-temp',   field: 'waterTemp',     label: 'Water Temp',   color: '#F59E0B', windowMs: RT_WINDOW_MS_60MIN },
+  { canvas: 'chart-ft-ph',     field: 'phValue',       label: 'pH',           color: '#00D4FF', windowMs: RT_WINDOW_MS_60MIN },
+  { canvas: 'chart-ft-temp',   field: 'waterTemp',     label: 'Temp °C',      color: '#F59E0B', windowMs: RT_WINDOW_MS_60MIN },
+  { canvas: 'chart-ft-tds',    field: 'tdsRaw',        label: 'TDS ppm',      color: '#22C55E', windowMs: RT_WINDOW_MS_60MIN },
+  { canvas: 'chart-ft-turb',   field: 'turbidityRaw',  label: 'Turbidity',    color: '#8B5CF6', windowMs: RT_WINDOW_MS_60MIN },
+  { canvas: 'chart-drain-wl3', field: 'waterLevel3',   label: 'WL3 %',        color: '#22C55E' },
+  { canvas: 'chart-sup-wl4',   field: 'waterLevel4',   label: 'WL4 %',        color: '#F59E0B' },
+  { canvas: 'chart-flow1',     field: 'flowMeter1',    label: 'Flow 1 L/min', color: '#00D4FF' },
+  { canvas: 'chart-flow2',     field: 'flowMeter2',    label: 'Flow 2 L/min', color: '#22C55E' },
+];
+
+/** Create (once) every real-time chart instance and (re)start the shared ticker. */
+function initRealtimeCharts() {
+  RT_CHARTS.forEach(cfg => {
+    const canvas = document.getElementById(cfg.canvas);
+    if (!canvas) return;
+    if (!State.rt.buffers[cfg.canvas]) State.rt.buffers[cfg.canvas] = [];
+    if (!State.charts[cfg.canvas]) {
+      State.charts[cfg.canvas] = new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: { labels: [], datasets: [makeLineDataset(cfg.label, [], cfg.color)] },
+        options: { ...CHART_DEFAULTS, animation: false },
+      });
+    }
+  });
+
+  if (!State.rt.timer) {
+    State.rt.timer = setInterval(tickRealtimeCharts, RT_TICK_MS);
+  }
+  tickRealtimeCharts();
 }
 
-function renderOverviewCharts() {
-  const recs = State.history.records;
-  upsertChart('chart-ov-ph',   buildChartData(recs, 'phValue',    'pH',          '#00D4FF'));
-  upsertChart('chart-ov-temp', buildChartData(recs, 'waterTemp',  'Water Temp',  '#F59E0B'));
-}
+/** Advance every real-time chart by one tick: append latest value, drop stale points. */
+function tickRealtimeCharts() {
+  const now = Date.now();
+  RT_CHARTS.forEach(cfg => {
+    const chart = State.charts[cfg.canvas];
+    const buf   = State.rt.buffers[cfg.canvas];
+    if (!chart || !buf) return;
 
-function renderFishTankCharts() {
-  const recs = State.history.records;
-  upsertChart('chart-ft-ph',   buildChartData(recs, 'phValue',       'pH',         '#00D4FF'));
-  upsertChart('chart-ft-temp', buildChartData(recs, 'waterTemp',     'Temp°C',     '#F59E0B'));
-  upsertChart('chart-ft-tds',  buildChartData(recs, 'tdsRaw',        'TDS ppm',    '#22C55E'));
-  upsertChart('chart-ft-turb', buildChartData(recs, 'turbidityRaw',  'Turbidity',  '#8B5CF6'));
-}
+    const raw = State.sensors.last[cfg.field];
+    const hasNew = raw !== null && raw !== undefined;
+    // Keep scrolling forward with the last known value when no fresh reading exists yet.
+    const v = hasNew ? Number(raw) : (buf.length ? buf[buf.length - 1].v : null);
+    buf.push({ t: now, v });
 
-function renderDrainChart() {
-  const recs = State.history.records;
-  upsertChart('chart-drain-wl3', buildChartData(recs, 'waterLevel3', 'WL3 %', '#22C55E'));
-}
+    // Trim anything outside this chart's rolling window to cap memory use.
+    const windowMs = cfg.windowMs || RT_WINDOW_MS;
+    while (buf.length && now - buf[0].t > windowMs) buf.shift();
 
-function renderSupplyChart() {
-  const recs = State.history.records;
-  upsertChart('chart-sup-wl4', buildChartData(recs, 'waterLevel4', 'WL4 %', '#F59E0B'));
-}
-
-function renderFlowCharts() {
-  const recs = State.history.records;
-  upsertChart('chart-flow1', buildChartData(recs, 'flowMeter1', 'Flow 1 L/min', '#00D4FF'));
-  upsertChart('chart-flow2', buildChartData(recs, 'flowMeter2', 'Flow 2 L/min', '#22C55E'));
+    // Longer (minutes-scale) windows don't need second-level precision on the axis.
+    const labelOpts = windowMs > 5 * 60 * 1000
+      ? { hour12: false, hour: '2-digit', minute: '2-digit' }
+      : { hour12: false };
+    chart.data.labels = buf.map(p => new Date(p.t).toLocaleTimeString('en-GB', labelOpts));
+    chart.data.datasets[0].data = buf.map(p => p.v);
+    chart.update('none'); // in-place redraw — no destroy, no flicker
+  });
 }
 
 function renderAnalyticsCharts() {
@@ -1245,8 +1341,6 @@ function renderAnalyticsCharts() {
         return `${d.getMonth()+1}/${d.getDate()}`;
       }),
       datasets: [
-        makeLineDataset('WL1 Fish',   recs.map(r => r.waterLevel1 ?? null), '#00D4FF'),
-        makeLineDataset('WL2 Filter', recs.map(r => r.waterLevel2 ?? null), '#22C55E'),
         makeLineDataset('WL3 Drain',  recs.map(r => r.waterLevel3 ?? null), '#F59E0B'),
         makeLineDataset('WL4 Supply', recs.map(r => r.waterLevel4 ?? null), '#8B5CF6'),
       ],
@@ -1883,11 +1977,14 @@ function stopTimelapse() {
 function exportHistoryCSV() {
   const recs = State.history.records;
   if (!recs.length) { showToast('No history data to export.', 'warn'); return; }
-  const headers = ['Timestamp','pH','TDS_ppm','Turbidity_NTU','WaterTemp_C','AirTemp_C','Humidity_%','WL1_%','WL2_%','WL3_%','WL4_%'];
+  const headers = ['Timestamp','pH','TDS_ppm','Turbidity_NTU','WaterTemp_C','AirTemp_C','Humidity_%',
+                    'FishTankFloat_Overflow','FishTankFloat_Underflow','WL3_%','WL4_%',
+                    'FilterTankFloat_Overflow','FilterTankFloat_Underflow'];
   const rows = recs.map(r => [
     r.loggedAt, r.phValue, r.tdsRaw, r.turbidityRaw,
     r.waterTemp, r.sht31Temp, r.sht31Humidity,
-    r.waterLevel1, r.waterLevel2, r.waterLevel3, r.waterLevel4
+    r.fishTankFloat_overflow, r.fishTankFloat_underflow, r.waterLevel3, r.waterLevel4,
+    r.filterTankFloat_overflow, r.filterTankFloat_underflow
   ].map(v => v ?? '').join(','));
   const csv  = [headers.join(','), ...rows].join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
@@ -1922,8 +2019,11 @@ function exportCustomReport() {
     a.download = `aquasystem_${from}_${to}.json`;
     a.click();
   } else {
-    const headers = ['Timestamp','pH','TDS','Turbidity','WaterTemp','AirTemp','Humidity','WL1','WL2','WL3','WL4'];
-    const rows    = filtered.map(r => [r.loggedAt,r.phValue,r.tdsRaw,r.turbidityRaw,r.waterTemp,r.sht31Temp,r.sht31Humidity,r.waterLevel1,r.waterLevel2,r.waterLevel3,r.waterLevel4].map(v=>v??'').join(','));
+    const headers = ['Timestamp','pH','TDS','Turbidity','WaterTemp','AirTemp','Humidity',
+                      'FishFloatOverflow','FishFloatUnderflow','WL3','WL4','FilterFloatOverflow','FilterFloatUnderflow'];
+    const rows    = filtered.map(r => [r.loggedAt,r.phValue,r.tdsRaw,r.turbidityRaw,r.waterTemp,r.sht31Temp,r.sht31Humidity,
+                      r.fishTankFloat_overflow,r.fishTankFloat_underflow,r.waterLevel3,r.waterLevel4,
+                      r.filterTankFloat_overflow,r.filterTankFloat_underflow].map(v=>v??'').join(','));
     const csv     = [headers.join(','), ...rows].join('\n');
     const blob    = new Blob([csv], { type: 'text/csv' });
     const a       = document.createElement('a');
@@ -1945,6 +2045,9 @@ function switchPanel(name) {
   const navItem = document.getElementById(`sb-${name}`);
   if (navItem) navItem.classList.add('active');
   State.activePanel = name;
+  // Persist so a browser refresh (F5) restores this same view instead of
+  // bouncing back to the first page.
+  try { sessionStorage.setItem(ACTIVE_PANEL_KEY, name); } catch (e) { /* ignore */ }
   // Close sidebar on mobile
   if (window.innerWidth <= 900) { document.getElementById('sidebar')?.classList.remove('open'); }
   // Trigger chart re-render if analytics panel opened
@@ -2057,8 +2160,4 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('confirm-modal')?.addEventListener('click', e => {
     if (e.target === e.currentTarget) closeModal();
   });
-
-  // Add IDs to float switch element for dynamic rendering
-  const ftFloatVal = document.querySelector('#panel-fish-tank .sensor-card:nth-child(5) .sc-val');
-  if (ftFloatVal && !ftFloatVal.id) ftFloatVal.id = 'ft-float-val';
 });
