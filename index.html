@@ -259,11 +259,11 @@
         <!-- Charts Row -->
         <div class="g2 mb15">
           <div class="chart-card">
-            <div class="chart-title">pH Trend (last 24h)<span class="badge badge-ok">Live</span></div>
+            <div class="chart-title">pH Trend (last 60 minutes)<span class="badge badge-ok">Live</span></div>
             <div class="chart-wrap ch-200"><canvas id="chart-ov-ph"></canvas></div>
           </div>
           <div class="chart-card">
-            <div class="chart-title">Temperature Trend<span class="badge badge-ok">Live</span></div>
+            <div class="chart-title">Temperature Trend (last 60 minutes)<span class="badge badge-ok">Live</span></div>
             <div class="chart-wrap ch-200"><canvas id="chart-ov-temp"></canvas></div>
           </div>
         </div>
@@ -286,23 +286,10 @@
         <div class="panel-hdr">
           <div>
             <div class="panel-title">Fish Tank</div>
-            <div class="panel-sub">Primary aquaculture unit — 7 sensors · 4 actuators</div>
+            <div class="panel-sub">Primary aquaculture unit — 8 sensors · 4 actuators</div>
           </div>
         </div>
         <div class="gauto mb15">
-          <div class="sensor-card sc-cyan">
-            <div class="sc-tank">Fish Tank</div>
-            <div class="sc-name">Water Level 1</div>
-            <div class="sc-val-row">
-              <div class="sc-val val-cyan" id="ft-wl1">80</div>
-              <div class="sc-unit">%</div>
-            </div>
-            <div class="sc-status ss-ok">● Normal</div>
-            <div class="sc-bar">
-              <div class="sc-fill" style="width:80%"></div>
-            </div>
-            <div class="sc-updated" id="ft-wl1-t">Updated 2s ago</div>
-          </div>
           <div class="sensor-card sc-ok">
             <div class="sc-tank">Fish Tank</div>
             <div class="sc-name">Water Temperature</div>
@@ -364,6 +351,24 @@
             <div class="sc-status ss-ok">● Activated</div>
             <div class="sc-updated">Updated 2s ago</div>
           </div>
+          <div class="sensor-card sc-ok" id="card-ft-float-of">
+            <div class="sc-tank">Fish Tank</div>
+            <div class="sc-name">🛟 Float Switch — Overflow</div>
+            <div class="sc-val-row">
+              <div class="sc-val val-ok" id="ft-float-of-val" style="font-size:1.3rem">NORMAL</div>
+            </div>
+            <div class="sc-status ss-ok" id="ft-float-of-status">● Normal</div>
+            <div class="sc-updated">Digital · fishTankFloat_overflow</div>
+          </div>
+          <div class="sensor-card sc-ok" id="card-ft-float-uf">
+            <div class="sc-tank">Fish Tank</div>
+            <div class="sc-name">🛟 Float Switch — Underflow</div>
+            <div class="sc-val-row">
+              <div class="sc-val val-ok" id="ft-float-uf-val" style="font-size:1.3rem">NORMAL</div>
+            </div>
+            <div class="sc-status ss-ok" id="ft-float-uf-status">● Normal</div>
+            <div class="sc-updated">Digital · fishTankFloat_underflow</div>
+          </div>
           <div class="sensor-card sc-ok">
             <div class="sc-tank">Environment</div>
             <div class="sc-name">SHT31 Air Temp</div>
@@ -387,19 +392,19 @@
         </div>
         <div class="g2 mb15">
           <div class="chart-card">
-            <div class="chart-title">pH — 24h History</div>
+            <div class="chart-title">pH — Live (last 60 minutes)</div>
             <div class="chart-wrap ch-160"><canvas id="chart-ft-ph"></canvas></div>
           </div>
           <div class="chart-card">
-            <div class="chart-title">Temperature — 24h History</div>
+            <div class="chart-title">Temperature — Live (last 60 minutes)</div>
             <div class="chart-wrap ch-160"><canvas id="chart-ft-temp"></canvas></div>
           </div>
           <div class="chart-card">
-            <div class="chart-title">TDS — 24h History</div>
+            <div class="chart-title">TDS — Live (last 60 minutes)</div>
             <div class="chart-wrap ch-160"><canvas id="chart-ft-tds"></canvas></div>
           </div>
           <div class="chart-card">
-            <div class="chart-title">Turbidity — 24h History</div>
+            <div class="chart-title">Turbidity — Live (last 60 minutes)</div>
             <div class="chart-wrap ch-160"><canvas id="chart-ft-turb"></canvas></div>
           </div>
         </div>
@@ -415,21 +420,27 @@
         <div class="panel-hdr">
           <div>
             <div class="panel-title">Filtration Tank</div>
-            <div class="panel-sub">Mechanical + Biological filtration — 2 sensors · 6 actuators</div>
+            <div class="panel-sub">Mechanical + Biological filtration — 3 sensors · 6 actuators</div>
           </div>
         </div>
         <div class="gauto mb15">
-          <div class="sensor-card sc-cyan">
+          <div class="sensor-card sc-ok" id="card-filt-float-of">
             <div class="sc-tank">Filter Tank</div>
-            <div class="sc-name">Water Level 2</div>
+            <div class="sc-name">🛟 Float Switch — Overflow</div>
             <div class="sc-val-row">
-              <div class="sc-val val-cyan" id="filt-wl2">75</div>
-              <div class="sc-unit">%</div>
+              <div class="sc-val val-ok" id="filt-float-of-val" style="font-size:1.3rem">NORMAL</div>
             </div>
-            <div class="sc-status ss-ok">● Normal</div>
-            <div class="sc-bar">
-              <div class="sc-fill" style="width:75%"></div>
+            <div class="sc-status ss-ok" id="filt-float-of-status">● Normal</div>
+            <div class="sc-updated">Digital · filterTankFloat_overflow</div>
+          </div>
+          <div class="sensor-card sc-ok" id="card-filt-float-uf">
+            <div class="sc-tank">Filter Tank</div>
+            <div class="sc-name">🛟 Float Switch — Underflow</div>
+            <div class="sc-val-row">
+              <div class="sc-val val-ok" id="filt-float-uf-val" style="font-size:1.3rem">NORMAL</div>
             </div>
+            <div class="sc-status ss-ok" id="filt-float-uf-status">● Normal</div>
+            <div class="sc-updated">Digital · filterTankFloat_underflow</div>
           </div>
           <div class="sensor-card sc-ok">
             <div class="sc-tank">Filter Tank</div>
@@ -576,7 +587,7 @@
           </div>
         </div>
         <div class="chart-card">
-          <div class="chart-title">Water Level 3 — 24h Trend</div>
+          <div class="chart-title">Water Level 3 — Live (last 60s)</div>
           <div class="chart-wrap ch-240"><canvas id="chart-drain-wl3"></canvas></div>
         </div>
       </div>
@@ -606,7 +617,7 @@
         </div>
         <div class="g2">
           <div class="chart-card">
-            <div class="chart-title">Water Level 4 — 24h</div>
+            <div class="chart-title">Water Level 4 — Live (last 60s)</div>
             <div class="chart-wrap ch-200"><canvas id="chart-sup-wl4"></canvas></div>
           </div>
           
@@ -686,11 +697,11 @@
         </div>
         <div class="g2">
           <div class="chart-card">
-            <div class="chart-title">Flow Sensor 1 — 24h</div>
+            <div class="chart-title">Flow Sensor 1 — Live (last 60s)</div>
             <div class="chart-wrap ch-200"><canvas id="chart-flow1"></canvas></div>
           </div>
           <div class="chart-card">
-            <div class="chart-title">Flow Sensor 2 — 24h</div>
+            <div class="chart-title">Flow Sensor 2 — Live (last 60s)</div>
             <div class="chart-wrap ch-200"><canvas id="chart-flow2"></canvas></div>
           </div>
         </div>
@@ -702,7 +713,7 @@
         <div class="panel-hdr">
           <div>
             <div class="panel-title">Sensor Management</div>
-            <div class="panel-sub">Calibration · health · configuration for all 13 sensors</div>
+            <div class="panel-sub">Calibration · health · configuration for all 15 sensors</div>
           </div>
         </div>
         <div class="tbl-wrap">
@@ -801,26 +812,26 @@
                 <td><button class="btn-xs btn-detail">Test</button></td>
               </tr>
               <tr>
-                <td>Water Level 1</td>
+                <td>Fish Tank Float — Overflow</td>
                 <td>Fish Tank</td>
-                <td>JSN-SR04T</td>
-                <td class="text-cyan" id="sm-wl1">80%</td>
-                <td>50–90</td>
+                <td>Digital</td>
+                <td class="text-green" id="sm-ft-of">NORMAL</td>
+                <td>—</td>
                 <td><span class="badge badge-ok">● Normal</span></td>
-                <td class="monospace">2026-04-20</td>
+                <td class="monospace">N/A</td>
                 <td><span class="badge badge-ok">Good</span></td>
-                <td><button class="btn-xs btn-detail">Calibrate</button></td>
+                <td><button class="btn-xs btn-detail">Test</button></td>
               </tr>
               <tr>
-                <td>Water Level 2</td>
-                <td>Filter Tank</td>
-                <td>JSN-SR04T</td>
-                <td class="text-cyan" id="sm-wl2">75%</td>
-                <td>50–90</td>
+                <td>Fish Tank Float — Underflow</td>
+                <td>Fish Tank</td>
+                <td>Digital</td>
+                <td class="text-green" id="sm-ft-uf">NORMAL</td>
+                <td>—</td>
                 <td><span class="badge badge-ok">● Normal</span></td>
-                <td class="monospace">2026-04-20</td>
+                <td class="monospace">N/A</td>
                 <td><span class="badge badge-ok">Good</span></td>
-                <td><button class="btn-xs btn-detail">Calibrate</button></td>
+                <td><button class="btn-xs btn-detail">Test</button></td>
               </tr>
               <tr>
                 <td>Water Level 3</td>
@@ -843,6 +854,28 @@
                 <td class="monospace">2026-04-20</td>
                 <td><span class="badge badge-warn">Check</span></td>
                 <td><button class="btn-xs btn-detail">Calibrate</button></td>
+              </tr>
+              <tr>
+                <td>Filter Tank Float — Overflow</td>
+                <td>Filter Tank</td>
+                <td>Digital</td>
+                <td class="text-green" id="sm-filt-of">NORMAL</td>
+                <td>—</td>
+                <td><span class="badge badge-ok">● Normal</span></td>
+                <td class="monospace">N/A</td>
+                <td><span class="badge badge-ok">Good</span></td>
+                <td><button class="btn-xs btn-detail">Test</button></td>
+              </tr>
+              <tr>
+                <td>Filter Tank Float — Underflow</td>
+                <td>Filter Tank</td>
+                <td>Digital</td>
+                <td class="text-green" id="sm-filt-uf">NORMAL</td>
+                <td>—</td>
+                <td><span class="badge badge-ok">● Normal</span></td>
+                <td class="monospace">N/A</td>
+                <td><span class="badge badge-ok">Good</span></td>
+                <td><button class="btn-xs btn-detail">Test</button></td>
               </tr>
               <tr>
                 <td>Flow Meter 1</td>
@@ -1127,10 +1160,12 @@
                 <th>Water Temp (°C)</th>
                 <th>Air Temp (°C)</th>
                 <th>Humidity (%)</th>
-                <th>WL1 (%)</th>
-                <th>WL2 (%)</th>
+                <th>Fish Float OF</th>
+                <th>Fish Float UF</th>
                 <th>WL3 (%)</th>
                 <th>WL4 (%)</th>
+                <th>Filter Float OF</th>
+                <th>Filter Float UF</th>
               </tr>
             </thead>
             <tbody id="history-tbody"></tbody>
